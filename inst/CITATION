@@ -1,0 +1,12 @@
+citHeader("To cite ProAE in publications use:")
+
+citEntry(
+  entry    = "Manual",
+  title    = "ProAE: Tools for PRO-CTCAE Scoring, analysis, and graphical display",
+  author   = "Blake Langlais, Molly Klanderman, Brie Noble, Amylou Dueck",
+  year     = "2020",
+  url      = "https://CRAN.R-project.org/",
+  textVersion = paste("Blake Langlais, et al (2020). ProAE: Tools for PRO-CTCAE scoring, analysis, and graphical display."
+
+  )
+)
