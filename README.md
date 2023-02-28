@@ -1,9 +1,9 @@
 # The `ProAE` Package <a href="https://duecklab.github.io/proae/"><img src="man/images/logo.png" alt="ProAE logo" style="float:right;height:232.25px" align="right" height="232.25"></a>
 
 <!-- badges: start -->
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/proae)](https://CRAN.R-project.org/package=proae)
-[![Total Downloads](http://cranlogs.r-pkg.org/badges/grand-total/proae)](https://CRAN.R-project.org/package=proae)
-[![Downloads](http://cranlogs.r-pkg.org/badges/proae)](https://CRAN.R-project.org/package=proae)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/ProAE)](https://CRAN.R-project.org/package=ProAE)
+[![Total Downloads](http://cranlogs.r-pkg.org/badges/grand-total/ProAE)](https://CRAN.R-project.org/package=ProAE)
+[![Downloads](http://cranlogs.r-pkg.org/badges/ProAE)](https://CRAN.R-project.org/package=ProAE)
 <!-- badges: end -->
 
 ## Overview
@@ -26,20 +26,20 @@ Composite grading reference: https://pubmed.ncbi.nlm.nih.gov/33258687/
 ## The `toxSummary()` Function
 
 `toxSummary()` is a function that creates patient-level adjusted scores and group-level summary statistics. When requesting patient-level summary measures, the output is a data frame with one observation per patient and include the `id_var` and PRO-CTCAE items are replaced with the adjusted score.
- 
- `summary_measure` options are:
 
-    *  `max` - patient-level - the maximum score over the treatment period for each item
+`summary_measure` options are:
 
-    *  `max_post_bl` - patient-level - the maximum score of all of the post-baseline timepoints for each item
+*  `max` - patient-level - the maximum score over the treatment period for each item
 
-    *  `bl_adjusted` - patient-level - the maximum score post-baseline if the maximum score is more severe than baseline. If the baseline score is equivalent or more severe than all  post-baseline scores then zero (0) is used as the adjusted score
+*  `max_post_bl` - patient-level - the maximum score of all of the post-baseline timepoints for each item
 
-    * `toxicity_index` - patient-level - the toxicity index for each patient. Reference: https://pubmed.ncbi.nlm.nih.gov/34371138/
+*  `bl_adjusted` - patient-level - the maximum score post-baseline if the maximum score is more severe than baseline. If the baseline score is equivalent or more severe than all  post-baseline scores then zero (0) is used as the adjusted score
 
-    * `AUC_worsening' - group-level - For each level of the `arm_var` or the entire sample, it calculates the modified Area Under the Curve (AUC) where PRO-CTCAE scores are worsening from baseline
+* `toxicity_index` - patient-level - the toxicity index for each patient. Reference: https://pubmed.ncbi.nlm.nih.gov/34371138/
 
-    * `AUC_improvement' - group-level - For each level of the `arm_var` or the entire sample, it calculates the modified Area Under the Curve (AUC) where PRO-CTCAE scores are improvement from baseline
+* `AUC_worsening' - group-level - For each level of the `arm_var` or the entire sample, it calculates the modified Area Under the Curve (AUC) where PRO-CTCAE scores are worsening from baseline
+
+* `AUC_improvement' - group-level - For each level of the `arm_var` or the entire sample, it calculates the modified Area Under the Curve (AUC) where PRO-CTCAE scores are improvement from baseline
 
 ## The `toxFigures` Function
 
