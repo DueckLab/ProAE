@@ -19,7 +19,8 @@
 #' @param type A character string. Type of summary measure to be be used.
 #'   Options include: \code{"max_post_bl"} = Use subjects' maximum score
 #'   post-baseline visit. \code{"bl_adjusted"} = Use subjects' baseline adjusted
-#'   score over the study period. The baseline adjusted score is derived by the
+#'   score over the study period. \code{"max"} = Use subjects' maximum score
+#'   over the study period. The baseline adjusted score is derived by the
 #'   following: If the maximum score post-baseline is more severe than the
 #'   baseline score, then the use maximum score post-baseline is used as the
 #'   adjusted score. Otherwise, if the maximum score post-baseline is the same
@@ -68,6 +69,7 @@ toxTables = function(dsn,
   max_val = NULL
   bl_adjusted = NULL
   max_post_bl = NULL
+  max = NULL
 
   ## -- Required parameters
 
@@ -175,7 +177,7 @@ toxTables = function(dsn,
       dplyr::mutate(base_val = get(item)[get(cycle_var) == baseline_val],
              max_val = ifelse(all(is.na(get(item))), NA, max(get(item), na.rm=TRUE)),
              bl_adjusted = ifelse(base_val >= max_val, 0, max_val))
-    dsn_adj = unique(dsn_adj0[,c(id_var, "bl_adjusted")])
+    dsn_adj = unique(dsn_adj0[,c(id_var, "bl_adjusted", "max_val")])
 
     dsn1 = merge(x=merge(x=dsn, y=dsn_max, by=id_var, all.x=TRUE),
                  y=dsn_adj, by=id_var, all.x=TRUE)
@@ -188,7 +190,7 @@ toxTables = function(dsn,
     # ----------------------------------------------------------------
     if(is.na(arm_var)){
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, bl_adjusted, max_post_bl) %>%
+        dplyr::select(id_var, bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -201,6 +203,9 @@ toxTables = function(dsn,
       } else if(tolower(type) == "max_post_bl"){
         dsn2$present = as.numeric(dsn2$max_post_bl > 0)
         dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
+      } else if(tolower(type) == "max"){
+        dsn2$present = as.numeric(dsn2$max_val > 0)
+        dsn2$severe = as.numeric(dsn2$max_val >= 3)
       }
 
       # ----------------------------------------------------------------
@@ -244,7 +249,7 @@ toxTables = function(dsn,
 
     } else {
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl) %>%
+        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -256,6 +261,9 @@ toxTables = function(dsn,
         dsn2$present = as.numeric(dsn2$bl_adjusted > 0)
         dsn2$severe = as.numeric(dsn2$bl_adjusted >= 3)
       } else if(tolower(type) == "max_post_bl"){
+        dsn2$present = as.numeric(dsn2$max_post_bl > 0)
+        dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
+      } else if(tolower(type) == "max"){
         dsn2$present = as.numeric(dsn2$max_post_bl > 0)
         dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
       }
@@ -441,7 +449,7 @@ toxTables = function(dsn,
       dplyr::mutate(base_val = get(item)[get(cycle_var) == baseline_val],
              max_val = ifelse(all(is.na(get(item))), NA, max(get(item), na.rm=TRUE)),
              bl_adjusted = ifelse(base_val >= max_val, 0, max_val))
-    dsn_adj = unique(dsn_adj0[,c(id_var, "bl_adjusted")])
+    dsn_adj = unique(dsn_adj0[,c(id_var, "bl_adjusted", "max_val")])
 
     dsn1 = merge(x=merge(x=dsn, y=dsn_max, by=id_var, all.x=TRUE),
                  y=dsn_adj, by=id_var, all.x=TRUE)
@@ -455,7 +463,7 @@ toxTables = function(dsn,
       # ----------------------------------------------------------------
 
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, bl_adjusted, max_post_bl) %>%
+        dplyr::select(id_var, bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -466,6 +474,9 @@ toxTables = function(dsn,
         dsn2$present = as.numeric(dsn2$bl_adjusted > 0)
         dsn2$severe = as.numeric(dsn2$bl_adjusted >= 3)
       } else if(tolower(type) == "max_post_bl"){
+        dsn2$present = as.numeric(dsn2$max_post_bl > 0)
+        dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
+      } else if(tolower(type) == "max"){
         dsn2$present = as.numeric(dsn2$max_post_bl > 0)
         dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
       }
@@ -512,7 +523,7 @@ toxTables = function(dsn,
     } else {
 
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl) %>%
+        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -524,6 +535,9 @@ toxTables = function(dsn,
         dsn2$present = as.numeric(dsn2$bl_adjusted > 0)
         dsn2$severe = as.numeric(dsn2$bl_adjusted >= 3)
       } else if(tolower(type) == "max_post_bl"){
+        dsn2$present = as.numeric(dsn2$max_post_bl > 0)
+        dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
+      } else if(tolower(type) == "max"){
         dsn2$present = as.numeric(dsn2$max_post_bl > 0)
         dsn2$severe = as.numeric(dsn2$max_post_bl >= 3)
       }
