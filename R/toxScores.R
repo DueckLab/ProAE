@@ -51,6 +51,8 @@
 #' tox_acute_comp = toxScores(dsn = ProAE::tox_acute, composites = TRUE)
 #' @export
 
+#This is to test github functionality
+
 toxScores = function(dsn,
                      reformat=FALSE,
                      impute=FALSE,
