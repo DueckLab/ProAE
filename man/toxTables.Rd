@@ -34,7 +34,8 @@ point.}
 \item{type}{A character string. Type of summary measure to be be used.
 Options include: \code{"max_post_bl"} = Use subjects' maximum score
 post-baseline visit. \code{"bl_adjusted"} = Use subjects' baseline adjusted
-score over the study period. The baseline adjusted score is derived by the
+score over the study period. \code{"max"} = Use subjects' maximum score
+over the study period. The baseline adjusted score is derived by the
 following: If the maximum score post-baseline is more severe than the
 baseline score, then the use maximum score post-baseline is used as the
 adjusted score. Otherwise, if the maximum score post-baseline is the same

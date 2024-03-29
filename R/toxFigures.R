@@ -50,6 +50,8 @@
 #' @param x_label A character string. Label for the x axis of the plot. Defaults
 #'   to \code{"Randomized Treatment Assignment"} if \code{arm_var} is specified,
 #'   defaults to \code{"Overall"} if not \code{arm_var} is specified.
+#' @param y_label A character string. Label for the y axis of the plot. Defaults
+#'   to \code{"Percent of Total Frequency"}.
 #' @param x_lab_angle A integer between 0 and 360. Allows the user to rotate the
 #'   x axis labels in order to fit long arm names (0 or 45 recommended).
 #'   Defaults to \code{0}.
@@ -61,12 +63,18 @@
 #'   to \code{0}.
 #' @param footnote_break Logical. Add a line break to the footnote Defaults to
 #'   \code{FALSE}.
+#' @param suppress_legend Logical. Suppress the legend from appearing in figure.
+#'    Defaults to \code{FALSE}.
+#' @param add_item_title Logical. Add the symptom item name as a title to the
+#'    figure. Defaults to \code{FALSE}.
+#' @param summary_highlight Logical. Add black box around summary measure bar
+#'    chart. Defaults to \code{FALSE}.
 #' @return A list object. The returned object is a (k X 2) or (k x 3) nested
 #'   list. Where k is the number of PRO-CTCAE item groups (e.g. pain, fatigue,
 #'   nausea); list[[1 ... i ... k]]. For each list item there are 2 or 3
 #'   elements. The 1st element of each list item is the name of the PRO-CTCAE
 #'   item group returned as a string. The 2nd element is the PRO-CTCAE figure as
-#'   a ggplot object.
+#'   a ggplot object. These objects can be modified as such.
 #' @importFrom magrittr %>%
 #' @examples
 #' \dontrun{
@@ -83,7 +91,6 @@
 #' }
 #' @export
 
-
 toxFigures = function(dsn,
                      id_var,
                      cycle_var,
@@ -96,12 +103,16 @@ toxFigures = function(dsn,
                      cycle_vals = NA,
                      cycle_labs = NA,
                      summary_only=FALSE,
+                     summary_highlight = FALSE,
                      cycles_only=FALSE,
                      x_lab_angle=0,
                      x_lab_vjust=1,
                      x_lab_hjust=0,
                      x_label = "Randomized Treatment Assignment",
-                     footnote_break = FALSE){
+                     y_label = "Percent of Total Frequency",
+                     footnote_break = FALSE,
+                     suppress_legend = FALSE,
+                     add_item_title = FALSE){
 
   # ----------------------------------------------------------------
   # -- Checks 1/2
@@ -502,21 +513,24 @@ toxFigures = function(dsn,
 
     for (k in facets){
       if(k=="Frequency"){
-        freq0 = paste0("<span style='font-size:",ptsize1,"'>\U23CD </span>Never /   ")
+        # freq0 = paste0("<span style='font-size:",ptsize1,"'>\U23CD </span>Never /   ")
+        freq0 = paste0("<span style='font-size:",ptsize1,"'>\U25A1</span> Never /   ")
         freq1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> Rarely   /   ")
         freq2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Occasionally   /   ")
         freq3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Frequently   /   ")
         freq4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Almost constantly")
         foot_note = paste0(foot_note, "**Frequency:** ", freq0, freq1, freq2, freq3, freq4, "<br>")
       } else if(k=="Severity"){
-        sev0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>None  /  ")
+        # sev0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>None  /  ")
+        sev0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> None  /  ")
         sev1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, "'>\U25A0</span>  Mild   /   ")
         sev2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Moderate   /   ")
         sev3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Severe   /   ")
         sev4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very severe")
         foot_note = paste0(foot_note, "**Severity:** ", sev0, sev1, sev2, sev3, sev4, "<br>")
       } else if(k=="Interference"){
-        int0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>Not at all  /  ")
+        # int0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>Not at all  /  ")
+        int0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> Not at all  /  ")
         int1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> A little bit   /   ")
         int2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Somewhat   /   ")
         int3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Quite a bit   /   ")
@@ -535,7 +549,8 @@ toxFigures = function(dsn,
         # ================================================================
 
       } else if(k=="Composite"){
-        comp0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>0  /  ")
+        # comp0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>0  /  ")
+        comp0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> 0  /  ")
         comp1 = paste0("<span style='font-size:",ptsize2,";color:", comp_col1 ,";'>\U25A0</span> 1  /  ")
         comp2 = paste0("<span style='font-size:",ptsize2,";color:", comp_col2 ,";'>\U25A0</span> 2  /  ")
         comp3 = paste0("<span style='font-size:",ptsize2,";color:", comp_col3 ,";'>\U25A0</span> 3 ")
@@ -585,6 +600,10 @@ toxFigures = function(dsn,
       foot_note = paste0(foot_note, label_foot, foot1, foot2a, foot2b)
     }
 
+    if(suppress_legend == TRUE){
+      foot_note = ""
+    }
+
     ## ----------------------------------------------------------------
     ## -- Conditional ggplot object combinations
     ## ----------------------------------------------------------------
@@ -614,6 +633,10 @@ toxFigures = function(dsn,
     names(plot_combined0)[names(plot_combined0) == arm_var] = "arm"
     if(arm_var=="overall_"){plot_combined0$arm=""}
 
+    if(summary_highlight == TRUE){
+      plot_combined0$fill_highlight = ifelse(plot_combined0$cycle_var_v_plot %in% c("Maximum*","Adjusted**"), "black",  "#ededed")
+    } else {plot_combined0$fill_highlight = NA}
+
     # ================================================================
     # ==== ACCOMMODATION FOR 27A HAIR LOSs AMOUNT ====================
     # ================================================================
@@ -621,6 +644,7 @@ toxFigures = function(dsn,
       levels(plot_combined0$item_lab) = c("Amount", "Composite", "Interference")
       plot_combined0[plot_combined0$lab=="Interference",]$item_lab = "Amount"
     }
+
     # ================================================================
     # ================================================================
     # ================================================================
@@ -637,6 +661,7 @@ toxFigures = function(dsn,
          sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
 
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
           ## -- Individual items
           ggplot2::scale_fill_manual(values = colset1,
@@ -663,7 +688,7 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
 
@@ -692,6 +717,8 @@ toxFigures = function(dsn,
 
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
 
+          ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
           ## -- Individual items
           ggplot2::scale_fill_manual(values = colset1,
                                      limits = names(colset1),
@@ -705,7 +732,7 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
 
@@ -735,6 +762,7 @@ toxFigures = function(dsn,
               sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
 
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
           ## -- Composite items
           ggplot2::scale_fill_manual(values = colset2,
@@ -749,7 +777,7 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
 
@@ -784,8 +812,9 @@ toxFigures = function(dsn,
       if("Composite" %in% unique(plot_combined0$lab) &
          sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
 
-
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
           ## -- Individual items
           ggplot2::scale_fill_manual(values = colset1,
@@ -817,9 +846,10 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
+
 
           ggplot2::theme(
             plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
@@ -834,6 +864,8 @@ toxFigures = function(dsn,
             legend.box.just = "left",
             panel.grid.major = ggplot2::element_blank(),
             panel.grid.minor = ggplot2::element_blank(),
+            # panel.background = ggplot2::element_rect(color="grey", fill="white"),
+            # strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
             panel.background = ggplot2::element_rect(color="grey", fill="white"),
             strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
             strip.text.y = ggplot2::element_text(angle=90))
@@ -845,6 +877,7 @@ toxFigures = function(dsn,
       else if(!("Composite" %in% unique(plot_combined0$lab))){
 
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
           ## -- Individual items
           ggplot2::scale_fill_manual(values = colset1,
@@ -863,7 +896,7 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
 
@@ -892,6 +925,7 @@ toxFigures = function(dsn,
               sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
 
         figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
           ## -- Composite items
           ggplot2::scale_fill_manual(values = colset2,
@@ -910,7 +944,7 @@ toxFigures = function(dsn,
 
           ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
           ggplot2::xlab(x_label) +
-          ggplot2::ylab("Percent of Total Frequency") +
+          ggplot2::ylab(y_label) +
 
           ggplot2::labs(caption = foot_note) +
 
@@ -935,7 +969,12 @@ toxFigures = function(dsn,
 
     list_out[[i]] = list()
     list_out[[i]][[1]] = refset[refset$group_rank==i,]$group_lab[1]
-    list_out[[i]][[2]] = figure_i
+
+    if (add_item_title == TRUE){
+      list_out[[i]][[2]] = figure_i +
+        ggplot2::ggtitle(refset[refset$group_rank==i,]$group_lab[1])
+    } else {list_out[[i]][[2]] = figure_i}
+
   }
 
   ## -- Reference table for user to view the indexing of PRO-CTCAE item groups withing the list output
@@ -950,5 +989,6 @@ toxFigures = function(dsn,
 
   ## -- Object return
   invisible(list_out)
+
 }
 

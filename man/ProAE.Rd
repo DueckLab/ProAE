@@ -3,6 +3,7 @@
 \docType{package}
 \name{ProAE}
 \alias{ProAE}
+\alias{ProAE-package}
 \title{ProAE.}
 \description{
 This package is a collection of tools for analyzing and plotting PRO-CTCAE data

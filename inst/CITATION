@@ -1,12 +1,10 @@
 citHeader("To cite ProAE in publications use:")
 
-citEntry(
-  entry    = "Manual",
+bibentry(
+  key = "proae",
+  bibtype  = "Manual",
   title    = "ProAE: Tools for PRO-CTCAE Scoring, analysis, and graphical display",
-  author   = "Blake Langlais, Molly Klanderman, Brie Noble, Amylou Dueck",
+  author   = c(person("Blake","Langlais"), person("Molly","Klanderman"),person("Brie","Noble"),person("Molly","Voss"),person("Amylou","Dueck")),
   year     = "2020",
-  url      = "https://CRAN.R-project.org/",
-  textVersion = paste("Blake Langlais, et al (2020). ProAE: Tools for PRO-CTCAE scoring, analysis, and graphical display."
-
-  )
+  url      = "https://CRAN.R-project.org/"
 )

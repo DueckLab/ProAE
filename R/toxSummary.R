@@ -23,7 +23,7 @@
 #'   baseline score, then the use maximum score post-baseline is used as the
 #'   adjusted score. Otherwise, if the maximum score post-baseline is the same
 #'   or less serve than the baseline score, then zero (0) is used as the
-#'   adjusted score. \code{"toxicity_index"} = Construct patient-level toxicity
+#'   adjusted score. \code{"toxicity_idex"} = Construct patient-level toxicity
 #'   index. \code{"AUC_worsening"} = Calculate group-level AUC describing
 #' @param baseline_val A number indicating the expected baseline cycle/time
 #'   point.
@@ -171,7 +171,7 @@ toxSummary <- function(dsn,
         dplyr::mutate(baseline = dplyr::if_else(get(cycle_var) == baseline_val, TRUE, FALSE)) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::filter(!baseline) %>%
-        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~ifelse(all(is.na(.)), NA, max(., na.rm = TRUE)), .groups = "drop"))
+        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~ifelse(all(is.na(.)), NA, max(., na.rm = TRUE))), .groups = "drop")
     }
 
     ## -----------------------------

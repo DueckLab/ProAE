@@ -18,12 +18,16 @@ toxFigures(
   cycle_vals = NA,
   cycle_labs = NA,
   summary_only = FALSE,
+  summary_highlight = FALSE,
   cycles_only = FALSE,
   x_lab_angle = 0,
   x_lab_vjust = 1,
   x_lab_hjust = 0,
   x_label = "Randomized Treatment Assignment",
-  footnote_break = FALSE
+  y_label = "Percent of Total Frequency",
+  footnote_break = FALSE,
+  suppress_legend = FALSE,
+  add_item_title = FALSE
 )
 }
 \arguments{
@@ -78,6 +82,9 @@ Defaults to \code{NA}.}
 Suppress the individual time points from plotting. Defaults to
 \code{FALSE}.}
 
+\item{summary_highlight}{Logical. Add black box around summary measure bar
+chart. Defaults to \code{FALSE}.}
+
 \item{cycles_only}{Logical. Only display the longitudinal time points in
 figures / Suppress the summary measures from plotting. Defaults to
 \code{FALSE}.}
@@ -98,8 +105,17 @@ to \code{0}.}
 to \code{"Randomized Treatment Assignment"} if \code{arm_var} is specified,
 defaults to \code{"Overall"} if not \code{arm_var} is specified.}
 
+\item{y_label}{A character string. Label for the y axis of the plot. Defaults
+to \code{"Percent of Total Frequency"}.}
+
 \item{footnote_break}{Logical. Add a line break to the footnote Defaults to
 \code{FALSE}.}
+
+\item{suppress_legend}{Logical. Suppress the legend from appearing in figure.
+Defaults to \code{FALSE}.}
+
+\item{add_item_title}{Logical. Add the symptom item name as a title to the
+figure. Defaults to \code{FALSE}.}
 }
 \value{
 A list object. The returned object is a (k X 2) or (k x 3) nested
@@ -107,7 +123,7 @@ A list object. The returned object is a (k X 2) or (k x 3) nested
   nausea); list[[1 ... i ... k]]. For each list item there are 2 or 3
   elements. The 1st element of each list item is the name of the PRO-CTCAE
   item group returned as a string. The 2nd element is the PRO-CTCAE figure as
-  a ggplot object.
+  a ggplot object. These objects can be modified as such.
 }
 \description{
 Data format should be in 'long' format, where each PRO-CTCAE item is a

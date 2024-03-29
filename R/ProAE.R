@@ -4,6 +4,7 @@
 #'
 #' @name ProAE
 #' @docType package
+#' @aliases ProAE-package
 NULL
 
 #' PRO-CTCAE variable / label crosswalk
