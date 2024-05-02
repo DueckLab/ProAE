@@ -217,11 +217,12 @@ toxFigures = function(dsn,
   dsn_items = dsn_items0[! dsn_items0 %in% as.character(proctcae_vars$name[proctcae_vars$fmt %in% c("yn_2_fmt", "yn_3_fmt", "yn_4_fmt")])]
 
   ## - Composites
-  proctcae_vars_comp0 = proctcae_vars[,-1] %>% dplyr::mutate_if(is.factor, as.character)
-  # proctcae_vars_comp0 = proctcae_vars[,-1]
+  proctcae_vars_comp0 = proctcae_vars %>% dplyr::mutate_if(is.factor, as.character)
+
   proctcae_vars_comp0 = proctcae_vars_comp0[!proctcae_vars_comp0$name %in% as.character(proctcae_vars_comp0$name[proctcae_vars_comp0$fmt %in% c("yn_2_fmt",
                                                                                                                                                 "yn_3_fmt",
-                                                                                                                                                "yn_4_fmt")]),]
+                                                                                                                                                "yn_4_fmt",
+                                                                                                                                                "gp5_fmt")]),]
   proctcae_vars_comp = c()
   proctcae_vars_comp$name = paste0(substr(proctcae_vars_comp0$name, 1, nchar(proctcae_vars_comp0$name)-5), "_COMP")
   proctcae_vars_comp$short_label = sub(proctcae_vars_comp0$short_label, pattern = " [[:alpha:]]*$", replacement = "")
@@ -234,7 +235,7 @@ toxFigures = function(dsn,
 
   ## -- Confirm there are available PRO-CTCAE variables within dsn with expected naming convention
   if(identical(dsn_items, character(0)) & identical(dsn_comps, character(0))){
-    stop(paste0("No PRO-CTCAE variables found within dsn (", deparse(substitute(dsn)), ") meeting the expected naming convention"))
+    stop(paste0("No compatible ProAE variables found within dsn (", deparse(substitute(dsn)), ") meeting the expected naming convention"))
   }
 
   # ----------------------------------------------------------------
@@ -242,8 +243,16 @@ toxFigures = function(dsn,
   # ----------------------------------------------------------------
 
   ## -- Available PRO-CTCAE items and composites available in dsn
-  refset = data.frame(name = c(dsn_items, dsn_comps))
-  refset$number = as.integer(gsub("[^0-9]", "", refset$name))
+  if(any(dsn_items %in% "GP5")){
+    refset = data.frame(name = c(dsn_items[!(dsn_items %in% "GP5")], dsn_comps, dsn_items[(dsn_items %in% "GP5")]))
+    refset$number = ifelse(!refset$name %in% "GP5",
+                           as.integer(gsub("[^0-9]", "", refset$name)),
+                           999)
+  } else {
+    refset = data.frame(name = c(dsn_items, dsn_comps))
+    refset$number = as.integer(gsub("[^0-9]", "", refset$name))
+  }
+
   refset$rank = ifelse(grepl("COMP", refset$name), 4,
                        ifelse(grepl("A_", refset$name), 1,
                               ifelse(grepl("B_", refset$name), 2, 3)))
@@ -281,12 +290,16 @@ toxFigures = function(dsn,
 
 
   # ----------------------------------------------------------------
-  # -- For each available PRO-CTCAE item grouping [i], process
+  # -- For each available ProAE variable grouping [i], process
   # ----------------------------------------------------------------
 
-  for (i in 1:max(refset$group_rank)){
+  list_out = vector(mode='list', max(refset$group_rank))
 
-    if(i==1){list_out = vector(mode='list', max(refset$group_rank))}
+  # ----------------------------------------------------------------
+  # --  PRO-CTCAE items
+  # ----------------------------------------------------------------
+  # ADD SOMETHING TO ACCOUNT FOR NO PROCTCAE ITEMS -- BTL 02MAY2024
+  for (i in 1:max(refset[refset$name!="GP5",]$group_rank)){
 
     # ----------------------------------------------------------------
     # -- For each PRO-CTCAE item within the grouping [j], process
@@ -976,6 +989,371 @@ toxFigures = function(dsn,
     } else {list_out[[i]][[2]] = figure_i}
 
   }
+
+  # ----------------------------------------------------------------
+  # --  Other PROs
+  # ----------------------------------------------------------------
+
+  # ----------------------------------------------------------------
+  # --  GP5
+  # ----------------------------------------------------------------
+
+  if(any(refset$name=="GP5")){
+    i = refset[refset$name=="GP5",]$group_rank
+    group_i = refset[refset$group_rank==i,]
+    plot_combined0 = data.frame()
+    for (j in 1:NROW(group_i)){
+      item = as.character(group_i$name[j])
+
+      if(arm_var != "overall_"){
+        dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, arm_var, item)])
+      } else if (arm_var == "overall_"){
+        dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, item)])
+        dsn0$overall_ = "Overall"
+      }
+
+      # ----------------------------------------------------------------
+      # -- Construct summary measures
+      # ----------------------------------------------------------------
+      ## -- Maximum grade post baseline
+      max_post0 = stats::aggregate(dsn0[dsn0[,cycle_var]>baseline_val, item],
+                                   by = list(dsn0[dsn0[,cycle_var]>baseline_val,id_var]),
+                                   FUN=max)
+      colnames(max_post0) = c(id_var, item)
+      max_post0[,cycle_var] = "Maximum*"
+      max_post1 = unique(merge(x=max_post0, y=dsn0[,c(id_var, arm_var)], by=id_var, all.x = TRUE))
+
+      ## -- Baseline adjusted
+      base_adj0 = dsn0[dsn0[,cycle_var]==baseline_val, c(id_var, item)]
+      colnames(base_adj0)[2] = "base_val"
+
+      base_adj1 = merge(x=dsn0, y=base_adj0, by=id_var, all.x=TRUE)
+      base_adj2 = stats::aggregate(base_adj1[base_adj1[,cycle_var]>baseline_val, item],
+                                   by = list(base_adj1[base_adj1[,cycle_var]>baseline_val,id_var]),
+                                   FUN=max)
+      colnames(base_adj2) = c(id_var, "max_post_bl")
+      base_adj2 = merge(x=base_adj1, y=unique(base_adj2), by=id_var, all.x=TRUE)
+      base_adj2$bl_adjusted = ifelse(!is.na(base_adj2$max_post_bl) & base_adj2$base_val >= base_adj2$max_post_bl,
+                                     0, base_adj2$max_post_bl)
+      base_adj3 = unique(base_adj2[!is.na(base_adj2$bl_adjusted),c(id_var, arm_var, "bl_adjusted")])
+      base_adj3[,cycle_var] = "Adjusted**"
+      colnames(base_adj3)[colnames(base_adj3) == "bl_adjusted"] = item
+
+
+      dsn1 = rbind.data.frame(dsn0, max_post1, base_adj3)
+      # ----------------------------------------------------------------
+      # -- Create labels for the bars
+      # ----------------------------------------------------------------
+
+      if(bar_label==0){
+        labs = dsn1[,c(cycle_var, arm_var)]
+        labs = unique(labs[c(cycle_var, arm_var)])
+        labs$bar_lab_opt = NA
+
+      } else if(bar_label==1){
+        labs = stats::aggregate(dsn1[dsn1[,item]>=0,item],
+                                by=list(dsn1[dsn1[,item]>=0,cycle_var],
+                                        dsn1[dsn1[,item]>=0,arm_var]),
+                                FUN=length)
+      } else if(bar_label %in% c(2,4)){
+        labs = stats::aggregate(dsn1[dsn1[,item]>0,item],
+                                by=list(dsn1[dsn1[,item]>0,cycle_var],
+                                        dsn1[dsn1[,item]>0,arm_var]),
+                                FUN=length)
+      } else if(bar_label %in% c(3,5)){
+        labs = stats::aggregate(dsn1[dsn1[,item]>=3,item],
+                                by=list(dsn1[dsn1[,item]>=3,cycle_var],
+                                        dsn1[dsn1[,item]>=3,arm_var]),
+                                FUN=length)
+      }
+      names(labs) = c(cycle_var, arm_var, "bar_lab_opt")
+
+      # -- Force zero counts
+      combo_counts = data.frame(table(dsn1[,cycle_var], dsn1[,arm_var]), stringsAsFactors=FALSE)
+      names(combo_counts) = c(cycle_var, arm_var, "total")
+      combo_counts$flag = 1
+
+      labs2 = merge(x=labs, y=combo_counts, by=c(cycle_var, arm_var), all.y = TRUE)
+
+      if(any(is.na(labs2$bar_lab_opt))){
+        labs2[is.na(labs2$bar_lab_opt),]$bar_lab_opt = 0
+      }
+
+      if(bar_label %in% c(4,5)){
+        labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt=round(labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt/labs2[labs2$bar_lab_opt!=0,]$total,digits=2)*100
+      }
+
+      dsn2 = merge(dsn1, labs2, by = c(cycle_var, arm_var))
+
+      # -- Only one label per cycle/arm combination
+      high = by(dsn2, INDICES = list(dsn2[,cycle_var], dsn2[,arm_var]), FUN = utils::tail, n=1)
+      high2 = do.call("rbind", as.list(high))
+      row_keeps = as.integer(rownames(high2))
+      dsn2[!(1:NROW(dsn2) %in% row_keeps),]$bar_lab_opt = NA
+
+      # ----------------------------------------------------------------
+      # -- Create labels for the cycle_var facets
+      # ----------------------------------------------------------------
+      dsn2$cycle_var_v_plot=factor(ifelse(dsn2[,cycle_var]=="Maximum*",
+                                          "Maximum*",
+                                          ifelse(dsn2[,cycle_var]=="Adjusted**", "Adjusted**",
+                                                 paste0(cycle_var," ", dsn2[,cycle_var]))),
+                                   levels=c(paste0(cycle_var," ", min(dsn0[,cycle_var]):max(dsn0[,cycle_var])),
+                                            "Maximum*",
+                                            "Adjusted**"))
+      dsn2$lab = group_i$lab[j]
+      dsn2$item = item
+      colnames(dsn2)[4] = "grade"
+
+      # -- Append
+      plot_combined0 = rbind.data.frame(plot_combined0, dsn2, stringsAsFactors=FALSE)
+    }
+
+
+    plot_combined0$grade_item = plot_combined0$grade
+    plot_combined0$item_lab = factor(plot_combined0$lab, levels=unique(plot_combined0$lab))
+
+    # ----------------------------------------------------------------
+    # -- Color palette options
+    # ----------------------------------------------------------------
+
+    if(colors==1){
+      # -- Default
+      item_col0 = "white"
+      item_col1 = "#90B0D9"
+      item_col2 = "#4D7EBF"
+      item_col3 = "#13478C"
+      item_col4 = "#142233"
+
+    } else if(colors==2){
+      # -- Qualitative (color-blind friendly)
+      item_col0 = "white"
+      item_col1 = "#0571B0"
+      item_col2 = "#92C5DE"
+      item_col3 = "#F4A582"
+      item_col4 = "#CA0020"
+
+    } else if(colors==3){
+      # -- Black and white
+      item_col0 = "white"
+      item_col1 = "#E6E6E6"
+      item_col2 = "#BDBDBD"
+      item_col3 = "#636363"
+      item_col4 = "#000000"
+    }
+
+    colset1 = c(
+      "0" = item_col0,
+      "1" = item_col1,
+      "2" = item_col2,
+      "3" = item_col3,
+      "4" = item_col4
+    )
+
+    ## -- Line color adjustments
+    colset1_line = colset1
+    colset1_line[1] = "grey"
+
+
+    ## -- Optional title
+    title_i = refset[refset$group_rank==i,]$group_lab[1]
+
+    # -- Legend components
+    facets = factor(unique(plot_combined0$lab))
+
+    foot_note = ""
+    ptsize1="15pt"
+    ptsize2="10pt"
+
+    freq0 = paste0("<span style='font-size:",ptsize1,"'>\U25A1</span> Not at all /   ")
+    freq1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> A little bit   /   ")
+    freq2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Somewhat   /   ")
+    freq3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Quite a bit   /   ")
+    freq4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very much")
+    foot_note = paste0(foot_note, "**Symptom Bother:** ", freq0, freq1, freq2, freq3, freq4, "<br>")
+
+    foot1 = "\\*Maximum bother reported post-baseline per patient.<br>"
+    foot2a = "\\*\\*Maximum bother reported post-baseline per patient when"
+    if(summary_only == TRUE || footnote_break == TRUE){
+      foot2b = " including only scores<br> that were worse than the patient's baseline score."
+    } else {
+      foot2b = " including only scores that were worse than the patient's baseline score."
+    }
+
+    # -- Label footnote addition
+    label_foot = ""
+    if(bar_label %in% c(2,4)){
+      foot_grade = 1
+    }
+    if(bar_label %in% c(3,5)){
+      foot_grade = 3
+    }
+    if(bar_label %in% c(2,3)){
+      foot_symbol = "(n)"
+      foot_type = "number"
+      y_scale_lab = c("0","25","50","75","100", "n ")
+    }
+    if(bar_label %in% c(4,5)){
+      foot_symbol = "(%)"
+      foot_type = "percent"
+      y_scale_lab = c("0","25","50","75","100", "% ")
+    }
+
+    if(bar_label==1){
+      label_foot = "Column labels (n) show the number of subjects with an observed bother score.<br>"
+      y_scale_lab = c("0","25","50","75","100", "n ")
+    } else if (bar_label %in% c(2, 3, 4, 5)){
+      label_foot = paste0("Column labels ", foot_symbol, " show the ", foot_type,
+                          " of subjects with bother score ",
+                          foot_grade," or greater.<br>")
+    }
+
+    if(cycles_only==TRUE){
+      foot_note = paste0(foot_note, label_foot)
+    } else if(cycles_only==FALSE){
+      foot_note = paste0(foot_note, label_foot, foot1, foot2a, foot2b)
+    }
+
+    if(suppress_legend == TRUE){
+      foot_note = ""
+    }
+
+    ## ----------------------------------------------------------------
+    ## -- Create ggplot object
+    ## ----------------------------------------------------------------
+
+    # -- Restrict the cycles to be plotted
+    if(!is.na(plot_limit)){
+      plot_combined0$cycle_plot_lim = as.integer(gsub("[^0-9]", "", plot_combined0[,cycle_var]))
+      plot_combined0=plot_combined0[(!is.na(plot_combined0$cycle_plot_lim)&plot_combined0$cycle_plot_lim<=plot_limit)|plot_combined0[,cycle_var] %in% c("Adjusted**","Maximum*"),]
+    }
+
+    # -- Restrict the cycles to be plotted
+    if(cycle_label == TRUE){
+      names(cycle_labs) = paste0(cycle_var," ", cycle_vals)
+      plot_combined0$cycle_var_v_plot = dplyr::recode(plot_combined0[, "cycle_var_v_plot"], !!!cycle_labs)
+    }
+
+    # -- Only show summary measures
+    if(summary_only==TRUE){
+      plot_combined0 = plot_combined0[plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*"),]
+    }
+
+    # -- Do not show summary measures
+    if(cycles_only==TRUE){
+      plot_combined0 = plot_combined0[!(plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*")),]
+    }
+
+    names(plot_combined0)[names(plot_combined0) == arm_var] = "arm"
+    if(arm_var=="overall_"){plot_combined0$arm=""}
+
+    if(summary_highlight == TRUE){
+      plot_combined0$fill_highlight = ifelse(plot_combined0$cycle_var_v_plot %in% c("Maximum*","Adjusted**"), "black",  "#ededed")
+    } else {plot_combined0$fill_highlight = NA}
+
+    # ----------------------------------------------------------------
+    # -- No labels requested
+    # ----------------------------------------------------------------
+    if(bar_label==0){
+
+      figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
+
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+        ## -- Individual items
+        ggplot2::scale_fill_manual(values = colset1,
+                                   limits = names(colset1),
+                                   guide = ggplot2::guide_legend(order = 2)) +
+        ggplot2::scale_color_manual(values = colset1_line) +
+        ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+
+        ggplot2::scale_y_continuous(labels = c("0","25","50","75","100"),
+                                    breaks = c(0, .25, .5, .75, 1),
+                                    limits = c(0, 1.01)) +
+
+        ggplot2::facet_grid(.~cycle_var_v_plot) +
+        ggplot2::xlab(x_label) +
+        ggplot2::ylab(y_label) +
+
+        ggplot2::labs(caption = foot_note) +
+
+        ggplot2::theme(
+          plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+          plot.title.position = "plot",
+          plot.caption.position =  "plot",
+          axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+          axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+          axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+          legend.position="none",
+          legend.box = "vertical",
+          legend.direction = "horizontal",
+          legend.box.just = "left",
+          panel.grid.major = ggplot2::element_blank(),
+          panel.grid.minor = ggplot2::element_blank(),
+          panel.background = ggplot2::element_rect(color="grey", fill="white"),
+          strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+          strip.text.y = ggplot2::element_text(angle=90))
+
+    }
+
+    # ----------------------------------------------------------------
+    # -- Labels requested
+    # ----------------------------------------------------------------
+    else if(bar_label!=0){
+
+      figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+        ## -- Individual items
+        ggplot2::scale_fill_manual(values = colset1,
+                                   limits = names(colset1),
+                                   guide = ggplot2::guide_legend(order = 2)) +
+        ggplot2::scale_color_manual(values = colset1_line) +
+        ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+
+        ## -- Customize
+        ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
+
+        ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
+        ggplot2::scale_y_continuous(labels = y_scale_lab,
+                                    breaks = c(0, .25, .5, .75, 1, 1.13),
+                                    limits = c(0, 1.14)) +
+
+        ggplot2::facet_grid(.~cycle_var_v_plot) +
+        ggplot2::xlab(x_label) +
+        ggplot2::ylab(y_label) +
+
+        ggplot2::labs(caption = foot_note) +
+
+        ggplot2::theme(
+          plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+          plot.title.position = "plot",
+          plot.caption.position =  "plot",
+          axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+          axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+          axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+          legend.position="none",
+          legend.box = "vertical",
+          legend.direction = "horizontal",
+          legend.box.just = "left",
+          panel.grid.major = ggplot2::element_blank(),
+          panel.grid.minor = ggplot2::element_blank(),
+          panel.background = ggplot2::element_rect(color="grey", fill="white"),
+          strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+          strip.text.y = ggplot2::element_text(angle=90))
+    }
+
+    # --- add to output list object
+
+    list_out[[i]] = list()
+    list_out[[i]][[1]] = refset[refset$group_rank==i,]$group_lab[1]
+
+    if (add_item_title == TRUE){
+      list_out[[i]][[2]] = figure_i +
+        ggplot2::ggtitle(refset[refset$group_rank==i,]$group_lab[1])
+    } else {list_out[[i]][[2]] = figure_i}
+  }
+
 
   ## -- Reference table for user to view the indexing of PRO-CTCAE item groups withing the list output
   for (i in 1:length(list_out)){
