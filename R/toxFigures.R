@@ -118,7 +118,7 @@ toxFigures = function(dsn,
   # -- Checks 1/2
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for data.frame variables used within ggplot2 objects as global variables
+  ## -- Assign binding for data.frame variables used within ggplot2 objects as global variables (temp)
 
   grade_comp = NULL
   grade_item = NULL
