@@ -32,8 +32,6 @@
 #'   placement of the AUC table within the figure. Defaults to \code{NA}.
 #' @param round_dec A number. Number of decimal places to be shown within
 #'   the AUC table. Defaults to \code{2}.
-#' @param overwrite_title A character string. Add main title to plots. Defaults
-#'   to \code{NA}.
 #' @param permute_tests Logical. Calls to calculate p values comparing the
 #'   difference in AUC between two arms using a permutation test. Typical two-
 #'   sided null hypothesis for a permutation test is applied. That is, assigning
@@ -51,6 +49,30 @@
 #'   confidence intervals. Must be between 0 and 1. Defaults to \code{0.05}.
 #' @param bootstrap_n A number. The number of bootstrap iterations to be used
 #'   for bootstrap confidence intervals. Defaults to \code{2000}.
+#' @param arm_colors A column vector of valid colors. Allows the user to define
+#'   the colors of arms shown in the returned figure. Column vector must have
+#'   length greater than or equal to the number of arms. Default colors
+#'   provided.
+#' @param auc A character string. Specifies the partitioning of area shown.
+#'   options include: \code{"above"} = accumulated area above the baseline
+#'   horizontal can be interpreted as worsening severity from baseline.
+#'   \code{"below"} = accumulated area below the baseline horizontal can be
+#'   interpreted the as the amount of decreased severity from baseline.
+#'   \code{"both"} = accumulated area above and below the baseline horizontal
+#'   are shown. Defaults to \code{"above"}.
+#' @param x_label A character string. Label for the x axis of the plot. Defaults
+#'   to \code{NA} resulting in x axis labeled with \code{cycle_var} variable
+#'   name.
+#' @param add_item_title Logical. Adds the item short label to the title of
+#'   each figure. Defaults to \code{FALSE}.
+#' @param cycle_label Logical. Assign custom labels to cycles/time point. If
+#'   \code{TRUE}, the \code{cycle_vals} and \code{cycle_labs} must also be specified.
+#' @param cycle_vals Numeric column vector. Vector of values seen within the
+#'   \code{cycle_var} variable. Must be same length of \code{cycle_labs}. Defaults
+#'   to \code{NA}.
+#' @param cycle_labs Character column vector. Vector of labels to be mapped to
+#'   the associated \code{cycle_vals}. Must be same length of \code{cycle_vals}.
+#'   Defaults to \code{NA}.
 #'
 #' @importFrom magrittr %>%
 #' @examples
@@ -63,23 +85,28 @@
 #' }
 #' @export
 
-
 toxAUC = function(dsn,
                   id_var,
                   cycle_var,
                   baseline_val,
                   arm_var=NA,
+                  auc = "above",
                   cycle_limit=NA,
                   y_limit=4,
                   tab_ymin=NA,
                   tab_ymax=NA,
                   round_dec = 2,
-                  overwrite_title = NA,
                   permute_tests = FALSE,
                   permute_n = 2000,
                   bootstrap_ci = FALSE,
                   bootstrap_ci_alpha = 0.05,
-                  bootstrap_n = 2000){
+                  bootstrap_n = 2000,
+                  arm_colors = NA,
+                  x_label = NA,
+                  add_item_title = FALSE,
+                  cycle_label = FALSE,
+                  cycle_vals = NA,
+                  cycle_labs = NA){
 
 
     # ----------------------------------------------------------------
@@ -119,6 +146,19 @@ toxAUC = function(dsn,
         stop(paste0("The value of the param baseline_val (", baseline_val, ") is not the smallest ", cycle_var, "."))
       }
     }
+    if(!(auc %in% c("above", "below", "both"))){
+      stop("param auc must be one of the fallowing; 'about' 'below' 'both")
+    }
+    ## -- Check for conflicts with figure options
+    if(cycle_label == TRUE){
+      if(any(is.na(cycle_vals) | is.na(cycle_labs))){
+        stop("params cycle_vals and cycle_labs must be provided while using cycle_label")
+      } else if(length(cycle_vals) != length(cycle_labs)){
+        stop("params cycle_vals and cycle_labs must be the same length column vector")
+      } else if(!is.numeric(cycle_vals) | !is.character(cycle_labs)){
+        stop("params cycle_vals and cycle_labs must be numeric and character vectors, respectively")
+      }
+    }
 
     ## -------------------------------------------------------------
     ## --- Reference data sets
@@ -128,7 +168,8 @@ toxAUC = function(dsn,
     ref0 = proctcae_vars$name
     ref1 = ref0[ref0 %in% grep("_SCL", ref0, value=TRUE)]
     ref2 = rbind(matrix(ref1),
-                 matrix(unique(paste0(substr(ref1,1,nchar(ref1)-5),"_COMP"))))
+                 matrix(unique(paste0(substr(ref1,1,nchar(ref1)-5),"_COMP"))),
+                 "GP5")
 
     # -- Get list of valid items within dsn
     ref = toupper(names(dsn)[toupper(names(dsn)) %in% ref2])
@@ -147,6 +188,10 @@ toxAUC = function(dsn,
     if(is.na(arm_var)){
       arm_var = "overall_arm___"
       dsn$overall_arm___ = "Overall"
+    }
+
+    if(any(is.na(arm_colors))){
+      arm_colors = c("black",  "#E69F00", "#0A7B83", "#CE4D45")
     }
 
     # ------------------------------------------------------------------------------
@@ -191,16 +236,18 @@ toxAUC = function(dsn,
     # --- Reference lists for use in plot reference data sets
     # --------
 
+    proctcae_vars_comp0 = proctcae_vars %>% dplyr::mutate_if(is.factor, as.character)
+    proctcae_vars_comp0 = proctcae_vars_comp0[!proctcae_vars_comp0$name %in% as.character(proctcae_vars_comp0$name[proctcae_vars_comp0$fmt %in% c("yn_2_fmt",
+                                                                                                                                                  "yn_3_fmt",
+                                                                                                                                                  "yn_4_fmt",
+                                                                                                                                                  "gp5_fmt")]),]
+    proctcae_vars_comp = c()
+    proctcae_vars_comp$name = paste0(substr(proctcae_vars_comp0$name, 1, nchar(proctcae_vars_comp0$name)-5), "_COMP")
+    proctcae_vars_comp$short_label = paste0(sub(proctcae_vars_comp0$short_label, pattern = " [[:alpha:]]*$", replacement = ""), " Composite")
+    proctcae_vars_comp = unique(data.frame(proctcae_vars_comp, stringsAsFactors=FALSE))
+    comp_tab = proctcae_vars_comp[proctcae_vars_comp$name %in% toupper(names(dsn)[toupper(names(dsn)) %in% proctcae_vars_comp$name]),]
     ref_labs0 = proctcae_vars[which(proctcae_vars$name %in% ref),-1]
-    comp_tab0 = ref_labs0
-    comp_tab0$name = gsub("([0-9]+).*$", "\\1", comp_tab0$name)
-    comp_tab0$short_label = gsub("Frequency", "Composite", comp_tab0$short_label)
-    comp_tab0$short_label = gsub("Severity", "Composite", comp_tab0$short_label)
-    comp_tab0$short_label = gsub("Interference", "Composite", comp_tab0$short_label)
-    comp_tab0$name = paste0(comp_tab0$name, "_COMP")
-    comp_tab = unique(comp_tab0)
-
-    ref_labs = rbind(ref_labs0, comp_tab)
+    ref_labs = rbind(ref_labs0[ref_labs0$name!="GP5",], comp_tab, ref_labs0[ref_labs0$name=="GP5",])
     ref_labs = ref_labs[which(ref_labs$name %in% ref),]
     ref_labs$index = seq.int(nrow(ref_labs))
 
@@ -465,6 +512,45 @@ toxAUC = function(dsn,
 
       bl_dat = plot_auc[plot_auc[,cycle_var] == baseline_val,]
 
+      if(permute_tests == TRUE & bootstrap_ci == TRUE){
+        caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
+                             ifelse(auc == "above",
+                                    "Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                    ifelse(auc == "below",
+                                           "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n",
+                                           paste0("Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                                  "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n"))),
+                             paste0("P values reflect two-sided permutation tests for exchangeability with ", permute_n," replications\n"),
+                             paste0("Condifence intervals constructed via bootstrap with ", bootstrap_n," replications"))
+      } else if(permute_tests == TRUE){
+        caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
+                             ifelse(auc == "above",
+                                    "Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                    ifelse(auc == "below",
+                                           "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n",
+                                           paste0("Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                                  "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n"))),
+                             paste0("P values reflect two-sided permutation tests for exchangeability with ", permute_n," replications"))
+      } else if(bootstrap_ci == TRUE){
+        caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
+                             ifelse(auc == "above",
+                                    "Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                    ifelse(auc == "below",
+                                           "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n",
+                                           paste0("Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                                  "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n"))),
+                             paste0("Confidence intervals constructed via bootstrap with ", bootstrap_n," replications"))
+      } else {
+        caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
+                             ifelse(auc == "above",
+                                    "Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                    ifelse(auc == "below",
+                                           "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n",
+                                           paste0("Positive iAUC above baseline represents increased symptomatic adverse events from baseline (solid shaded area)\n",
+                                                  "Negative iAUC below baseline represents decreased symptomatic adverse events from baseline (striped shaded area)\n"))))
+      }
+
+
       ## Overall / 1-arm accommodation
       if(nrow(bl_dat)==1){
         bl_arm1 = bl_dat[1,item]
@@ -484,8 +570,8 @@ toxAUC = function(dsn,
                          group_bl_ceiling_inter)
 
         names(anno_tab) = c("",
-                            "Worsening [solid area]",
-                            "Improvement [striped area]")
+                            "iAUC above baseline horizonal",
+                            "iAUC below baseline horizonal")
 
         ribbon_dat = ribbon_plot[[i]]
 
@@ -513,59 +599,92 @@ toxAUC = function(dsn,
         ribbon_dat[,arm_var] = as.factor(ribbon_dat[,arm_var])
 
         # -- Solid cols
-        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, "black", "#E69F00")
+        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, arm_colors[1], arm_colors[2])
         arm_fill_cols = unique(ribbon_dat$arm_col)
 
         # -- Pattern cols
-        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, "black", "#E69F00")
+        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, arm_colors[1], arm_colors[2])
         arm_fill_pattern_cols = unique(ribbon_pattern_dat$arm_col)
 
         figure_i = ggplot2::ggplot(plot_auc, ggplot2::aes_string(x=cycle_var, y=item, group=arm_var, fill=arm_var)) +
           ggplot2::geom_line(ggplot2::aes_string(color=arm_var, linetype=arm_var)) +
           ggplot2::geom_point(ggplot2::aes_string(color=arm_var)) +
 
-          # -- Worsening
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
-
-           ggpattern::geom_ribbon_pattern(
-            data = ribbon_pattern_dat,
-            ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
-            inherit.aes = FALSE,
-            pattern_alpha = 0.4,
-            fill            = NA,
-            pattern         = 'stripe',
-            pattern_spacing = 0.02,
-            pattern_density = 0.5,
-            show.legend = FALSE
-          ) +
-
           # --- Add horizontal line indicating baseline value
           ggplot2::geom_segment(ggplot2::aes_string(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = arm_var),
                                 linetype="dashed",
                                 data = df,
                                 inherit.aes = FALSE) +
-
-          ggplot2::scale_x_continuous(name=cycle_var, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit) +
           ggplot2::scale_y_continuous(name="Mean Score", limits=c(0, y_limit)) +
           ggplot2::scale_linetype_manual(values=c("solid")) +
           ggplot2::scale_color_manual(values=arm_fill_cols) +
           ggplot2::scale_fill_manual(values=arm_fill_cols) +
           ggpattern::scale_pattern_color_manual(values=arm_fill_pattern_cols) +
           ggpattern::scale_pattern_fill_manual(values=arm_fill_pattern_cols) +
-          ggplot2::annotation_custom(gridExtra::tableGrob(t(anno_tab)), xmin=0.375*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
           ggplot2::theme_bw() +
-          ggplot2::ggtitle(ifelse(is.na(overwrite_title),
-                         paste0(item_title, ": Baseline adjusted AUC"),
-                         overwrite_title)) +
-          ggplot2::labs(caption = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                                "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                                "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n")) +
+          ggplot2::labs(caption = caption_lab) +
 
           ggplot2::theme(legend.position = "none",
                 legend.background = ggplot2::element_rect(fill = "white", color = "black"),
                 legend.title = ggplot2::element_blank(),
                 plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+        if(is.na(x_label)){
+          x_label = cycle_var
+        }
+        if(cycle_label == TRUE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = cycle_vals, labels = cycle_labs)
+        } else if(cycle_label == FALSE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit)
+        }
+        if(add_item_title == TRUE){
+          figure_i = figure_i +
+            ggplot2::ggtitle(item_title)
+        }
+        if(auc == "above"){
+          anno_tab_auc = t(anno_tab[,1:2])
+          row.names(anno_tab_auc) = c("","iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE)
+        } else if(auc == "below"){
+          anno_tab_auc = t(anno_tab[,c(1,3)])
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        } else if(auc == "both"){
+          anno_tab_auc = t(anno_tab)
+          row.names(anno_tab_auc) = c("", "iAUC above", "iAUC below")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        }
 
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
@@ -592,8 +711,8 @@ toxAUC = function(dsn,
                          group_bl_ceiling_inter)
 
         names(anno_tab) = c("",
-                            "Worsening [solid area]",
-                            "Improvement [striped area]")
+                            "iAUC above baseline horizonal",
+                            "iAUC below baseline horizonal")
 
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
@@ -633,8 +752,8 @@ toxAUC = function(dsn,
 
           rownames(anno_tab) = NULL
           names(anno_tab) = c("",
-                              "Worsening [solid area]",
-                              "Improvement [striped area]")
+                              "iAUC above baseline horizonal",
+                              "iAUC below baseline horizonal")
         }
 
 
@@ -675,8 +794,8 @@ toxAUC = function(dsn,
           anno_tab_boot = cbind.data.frame(names = rownames(anno_tab_boot),anno_tab_boot)
           rownames(anno_tab_boot) = NULL
           names(anno_tab_boot) = c("",
-                                   "Worsening [solid area]",
-                                   "Improvement [striped area]")
+                                   "iAUC above baseline horizonal",
+                                   "iAUC below baseline horizonal")
 
           if(permute_tests == TRUE){
             anno_tab = rbind(anno_tab, anno_tab_boot[3,])
@@ -718,57 +837,16 @@ toxAUC = function(dsn,
         ribbon_dat[,arm_var] = as.factor(ribbon_dat[,arm_var])
 
         # -- Solid cols
-        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, "black", "#E69F00")
+        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, arm_colors[1], arm_colors[2])
         arm_fill_cols = unique(ribbon_dat$arm_col)
 
         # -- Pattern cols
-        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, "black", "#E69F00")
+        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, arm_colors[1], arm_colors[2])
         arm_fill_pattern_cols = unique(ribbon_pattern_dat$arm_col)
-
-        # -- Add note for permutation tests
-        if(permute_tests == TRUE & bootstrap_ci == TRUE){
-          caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                               "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                               "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n",
-                               paste0("P values reflect two-sided permutation tests for exchangeability with ", permute_n," replications\n"),
-                               paste0("Condifence intervals constructed via bootstrap with ", bootstrap_n," replications"))
-        } else if(permute_tests == TRUE){
-          caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                               "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                               "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n",
-                               paste0("P values reflect two-sided permutation tests for exchangeability with ", permute_n," replications"))
-        } else if(bootstrap_ci == TRUE){
-          caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                               "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                               "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n",
-                               paste0("Condifence intervals constructed via bootstrap with ", bootstrap_n," replications"))
-        } else {
-          caption_lab = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                               "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                               "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n")
-        }
 
         figure_i = ggplot2::ggplot(plot_auc, ggplot2::aes_string(x=cycle_var, y=item, group=arm_var, fill=arm_var)) +
           ggplot2::geom_line(ggplot2::aes_string(color=arm_var, linetype=arm_var)) +
           ggplot2::geom_point(ggplot2::aes_string(color=arm_var)) +
-
-          # -- Worsening
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-
-          ggpattern::geom_ribbon_pattern(
-            data = ribbon_pattern_dat,
-            ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
-            inherit.aes = FALSE,
-            pattern_alpha = 0.4,
-            fill            = NA,
-            pattern         = 'stripe',
-            pattern_spacing = 0.02,
-            pattern_density = 0.5,
-            show.legend = FALSE
-          ) +
 
           # --- Add horizontal line indicating baseline value
           ggplot2::geom_segment(ggplot2::aes_string(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = arm_var),
@@ -776,25 +854,82 @@ toxAUC = function(dsn,
                                 data = df,
                                 inherit.aes = FALSE) +
 
-          ggplot2::scale_x_continuous(name=cycle_var, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit) +
           ggplot2::scale_y_continuous(name="Mean Score", limits=c(0, y_limit)) +
           ggplot2::scale_linetype_manual(values=c("solid", "solid")) +
           ggplot2::scale_color_manual(values=arm_fill_cols) +
           ggplot2::scale_fill_manual(values=arm_fill_cols) +
           ggpattern::scale_pattern_color_manual(values=arm_fill_pattern_cols) +
           ggpattern::scale_pattern_fill_manual(values=arm_fill_pattern_cols) +
-          ggplot2::annotation_custom(gridExtra::tableGrob(t(anno_tab)), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
           ggplot2::theme_bw() +
-          ggplot2::ggtitle(ifelse(is.na(overwrite_title),
-                         paste0(item_title, ": Baseline adjusted AUC"),
-                         overwrite_title)) +
           ggplot2::labs(caption = caption_lab) +
-
           ggplot2::theme(legend.position = c(.15,.85),
                 legend.background = ggplot2::element_rect(fill = "white", color = "black"),
                 legend.title = ggplot2::element_blank(),
                 plot.caption = ggplot2::element_text(hjust = 0, size = 10))
 
+        if(is.na(x_label)){
+          x_label = cycle_var
+        }
+        if(cycle_label == TRUE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = cycle_vals, labels = cycle_labs)
+        } else if(cycle_label == FALSE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit)
+        }
+        if(add_item_title == TRUE){
+          figure_i = figure_i +
+            ggplot2::ggtitle(item_title)
+        }
+        if(auc == "above"){
+          anno_tab_auc = t(anno_tab)[1:2,]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE)
+
+        } else if(auc == "below"){
+          anno_tab_auc = t(anno_tab)[c(1,3),]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        } else if(auc == "both"){
+          anno_tab_auc = t(anno_tab)
+          row.names(anno_tab_auc) = c("", "iAUC above", "iAUC below")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+
+        }
 
       } else if(nrow(bl_dat)==3){
         bl_arm1 = bl_dat[1,item]
@@ -821,8 +956,8 @@ toxAUC = function(dsn,
                          group_bl_ceiling_inter)
 
         names(anno_tab) = c("",
-                            "Worsening [solid area]",
-                            "Improvement [striped area]")
+                            "iAUC above baseline horizonal",
+                            "iAUC below baseline horizonal")
 
         ribbon_dat = ribbon_plot[[i]]
 
@@ -854,14 +989,14 @@ toxAUC = function(dsn,
         ribbon_dat[,arm_var] = as.factor(ribbon_dat[,arm_var])
 
         # -- Solid cols
-        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, "black",
-                                    ifelse(ribbon_dat[,arm_var] == name_arm2, "#E69F00", "#0A7B83"))
+        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, arm_colors[1],
+                                    ifelse(ribbon_dat[,arm_var] == name_arm2, arm_colors[2], arm_colors[3]))
 
         arm_fill_cols = unique(ribbon_dat$arm_col)
 
         # -- Pattern cols
-        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, "black",
-                                            ifelse(ribbon_pattern_dat[,arm_var] == name_arm2, "#E69F00", "#0A7B83"))
+        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, arm_colors[1],
+                                            ifelse(ribbon_pattern_dat[,arm_var] == name_arm2, arm_colors[2], arm_colors[3]))
 
 
         arm_fill_pattern_cols = unique(ribbon_pattern_dat$arm_col)
@@ -869,25 +1004,6 @@ toxAUC = function(dsn,
         figure_i = ggplot2::ggplot(plot_auc, ggplot2::aes_string(x=cycle_var, y=item, group=arm_var, fill=arm_var)) +
           ggplot2::geom_line(ggplot2::aes_string(color=arm_var, linetype=arm_var)) +
           ggplot2::geom_point(ggplot2::aes_string(color=arm_var)) +
-          # -- Worsening
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                               ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                               ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
-                               ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-
-          ggpattern::geom_ribbon_pattern(
-            data = ribbon_pattern_dat,
-            ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
-            inherit.aes = FALSE,
-            pattern_alpha = 0.4,
-            fill            = NA,
-            pattern         = 'stripe',
-            pattern_spacing = 0.02,
-            pattern_density = 0.5,
-            show.legend = FALSE
-          ) +
 
           # --- Add horizontal line indicating baseline value
           ggplot2::geom_segment(ggplot2::aes_string(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = arm_var),
@@ -895,26 +1011,85 @@ toxAUC = function(dsn,
                                 data = df,
                                 inherit.aes = FALSE) +
 
-          ggplot2::scale_x_continuous(name=cycle_var, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit) +
           ggplot2::scale_y_continuous(name="Mean Score", limits=c(0, y_limit)) +
           ggplot2::scale_linetype_manual(values=c("solid", "solid", "solid")) +
           ggplot2::scale_color_manual(values=arm_fill_cols) +
           ggplot2::scale_fill_manual(values=arm_fill_cols) +
           ggpattern::scale_pattern_color_manual(values=arm_fill_pattern_cols) +
           ggpattern::scale_pattern_fill_manual(values=arm_fill_pattern_cols) +
-          ggplot2::annotation_custom(gridExtra::tableGrob(t(anno_tab)), xmin=0.375*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
           ggplot2::theme_bw() +
-          ggplot2::ggtitle(ifelse(is.na(overwrite_title),
-                         paste0(item_title, ": Baseline adjusted AUC"),
-                         overwrite_title)) +
-          ggplot2::labs(caption = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                                "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                                "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n")) +
-
+          ggplot2::labs(caption = caption_lab) +
           ggplot2::theme(legend.position = c(.15,.85),
                 legend.background = ggplot2::element_rect(fill = "white", color = "black"),
                 legend.title = ggplot2::element_blank(),
                 plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+        if(is.na(x_label)){
+          x_label = cycle_var
+        }
+        if(cycle_label == TRUE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = cycle_vals, labels = cycle_labs)
+        } else if(cycle_label == FALSE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit)
+        }
+
+        if(add_item_title == TRUE){
+          figure_i = figure_i +
+            ggplot2::ggtitle(item_title)
+        }
+
+        if(auc == "above"){
+          anno_tab_auc = t(anno_tab)[1:2,]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE)
+        } else if(auc == "below"){
+          anno_tab_auc = t(anno_tab)[c(1,3),]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        } else if(auc == "both"){
+          anno_tab_auc = t(anno_tab)
+          row.names(anno_tab_auc) = c("", "iAUC above", "iAUC below")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        }
 
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
@@ -948,8 +1123,8 @@ toxAUC = function(dsn,
                          group_bl_ceiling_inter)
 
         names(anno_tab) = c("",
-                            "Worsening [solid area]",
-                            "Improvement [striped area]")
+                            "iAUC above baseline horizonal",
+                            "iAUC below baseline horizonal")
 
         ribbon_dat = ribbon_plot[[i]]
 
@@ -983,16 +1158,16 @@ toxAUC = function(dsn,
         ribbon_dat[,arm_var] = as.factor(ribbon_dat[,arm_var])
 
         # -- Solid cols
-        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, "black",
-                                    ifelse(ribbon_dat[,arm_var] == name_arm2, "#E69F00",
-                                           ifelse(ribbon_dat[,arm_var] == name_arm3, "#0A7B83", "#CE4D45")))
+        ribbon_dat$arm_col = ifelse(ribbon_dat[,arm_var] == name_arm1, arm_colors[1],
+                                    ifelse(ribbon_dat[,arm_var] == name_arm2, arm_colors[2],
+                                           ifelse(ribbon_dat[,arm_var] == name_arm3, arm_colors[3], arm_colors[4])))
 
         arm_fill_cols = unique(ribbon_dat$arm_col)
 
         # -- Pattern cols
-        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, "black",
-                                            ifelse(ribbon_pattern_dat[,arm_var] == name_arm2, "#E69F00",
-                                                   ifelse(ribbon_pattern_dat[,arm_var] == name_arm3, "#0A7B83", "#CE4D45")))
+        ribbon_pattern_dat$arm_col = ifelse(ribbon_pattern_dat[,arm_var] == name_arm1, arm_colors[1],
+                                            ifelse(ribbon_pattern_dat[,arm_var] == name_arm2, arm_colors[2],
+                                                   ifelse(ribbon_pattern_dat[,arm_var] == name_arm3, arm_colors[3], arm_colors[4])))
 
 
         arm_fill_pattern_cols = unique(ribbon_pattern_dat$arm_col)
@@ -1000,27 +1175,6 @@ toxAUC = function(dsn,
         figure_i = ggplot2::ggplot(plot_auc, ggplot2::aes_string(x=cycle_var, y=item, group=arm_var, fill=arm_var)) +
           ggplot2::geom_line(ggplot2::aes_string(color=arm_var, linetype=arm_var)) +
           ggplot2::geom_point(ggplot2::aes_string(color=arm_var)) +
-          # -- Worsening
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-          ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm4, ],
-                      ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
-
-          ggpattern::geom_ribbon_pattern(
-            data = ribbon_pattern_dat,
-            ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
-            inherit.aes = FALSE,
-            pattern_alpha = 0.4,
-            fill            = NA,
-            pattern         = 'stripe',
-            pattern_spacing = 0.02,
-            pattern_density = 0.5,
-            show.legend = FALSE
-          ) +
 
           # --- Add horizontal line indicating baseline value
           ggplot2::geom_segment(ggplot2::aes_string(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = arm_var),
@@ -1028,26 +1182,91 @@ toxAUC = function(dsn,
                        data = df,
                        inherit.aes = FALSE) +
 
-          ggplot2::scale_x_continuous(name=cycle_var, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit) +
           ggplot2::scale_y_continuous(name="Mean Score", limits=c(0, y_limit)) +
           ggplot2::scale_linetype_manual(values=c("solid", "solid", "solid", "solid")) +
           ggplot2::scale_color_manual(values=arm_fill_cols) +
           ggplot2::scale_fill_manual(values=arm_fill_cols) +
           ggpattern::scale_pattern_color_manual(values=arm_fill_pattern_cols) +
           ggpattern::scale_pattern_fill_manual(values=arm_fill_pattern_cols) +
-          ggplot2::annotation_custom(gridExtra::tableGrob(t(anno_tab)), xmin=0.375*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
           ggplot2::theme_bw() +
-          ggplot2::ggtitle(ifelse(is.na(overwrite_title),
-                         paste0(item_title, ": Baseline adjusted AUC"),
-                         overwrite_title)) +
-          ggplot2::labs(caption = paste0("Dashed horizontal line indicates arm-level baseline symptomatic adverse event level\n",
-                                "Positive AUC represents increased symptomatic adverse events from baseline (Worsening)\n",
-                                "Negative AUC represents decreased symptomatic adverse events from baseline (Improvement)\n")) +
+          ggplot2::labs(caption = caption_lab) +
 
           ggplot2::theme(legend.position = c(.15,.85),
                 legend.background = ggplot2::element_rect(fill = "white", color = "black"),
                 legend.title = ggplot2::element_blank(),
                 plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+        if(is.na(x_label)){
+          x_label = cycle_var
+        }
+        if(cycle_label == TRUE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = cycle_vals, labels = cycle_labs)
+        } else if(cycle_label == FALSE){
+          figure_i = figure_i +
+            ggplot2::scale_x_continuous(name=x_label, limits=c(baseline_val, cycle_limit), breaks = baseline_val:cycle_limit)
+        }
+
+        if(add_item_title == TRUE){
+          figure_i = figure_i +
+            ggplot2::ggtitle(item_title)
+        }
+
+        if(auc == "above"){
+          anno_tab_auc = t(anno_tab)[1:2,]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm4, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE)
+
+        } else if(auc == "below"){
+          anno_tab_auc = t(anno_tab)[c(1,3),]
+          row.names(anno_tab_auc) = c("", "iAUC")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        } else if(auc == "both"){
+          anno_tab_auc = t(anno_tab)
+          row.names(anno_tab_auc) = c("", "iAUC above", "iAUC below")
+          figure_i = figure_i +
+            ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.4, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm4, ],
+                                 ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, fill=arm_var), alpha = 0.3, inherit.aes = FALSE) +
+            ggpattern::geom_ribbon_pattern(
+              data = ribbon_pattern_dat,
+              ggplot2::aes_string(x = cycle_var, ymin = "bl_val", ymax = item, pattern_fill = arm_var, pattern_color = arm_var),
+              inherit.aes = FALSE,
+              pattern_alpha = 0.4,
+              fill            = NA,
+              pattern         = 'stripe',
+              pattern_spacing = 0.02,
+              pattern_density = 0.5,
+              show.legend = FALSE
+            )
+        }
 
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
