@@ -46,7 +46,7 @@
 #'   \code{FALSE}.
 #' @param cycles_only Logical. Only display the longitudinal time points in
 #'   figures / Suppress the summary measures from plotting. Defaults to
-#'   \code{FALSE}.
+#'   \code{TRUE}.
 #' @param x_label A character string. Label for the x axis of the plot. Defaults
 #'   to \code{"Randomized Treatment Assignment"} if \code{arm_var} is specified,
 #'   defaults to \code{"Overall"} if not \code{arm_var} is specified.
@@ -104,7 +104,7 @@ toxFigures = function(dsn,
                      cycle_labs = NA,
                      summary_only=FALSE,
                      summary_highlight = FALSE,
-                     cycles_only=FALSE,
+                     cycles_only=TRUE,
                      x_lab_angle=0,
                      x_lab_vjust=1,
                      x_lab_hjust=0,
@@ -118,7 +118,7 @@ toxFigures = function(dsn,
   # -- Checks 1/2
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for data.frame variables used within ggplot2 objects as global variables
+  ## -- Assign binding for data.frame variables used within ggplot2 objects as global variables (temp)
 
   grade_comp = NULL
   grade_item = NULL
@@ -298,698 +298,699 @@ toxFigures = function(dsn,
   # ----------------------------------------------------------------
   # --  PRO-CTCAE items
   # ----------------------------------------------------------------
-  # ADD SOMETHING TO ACCOUNT FOR NO PROCTCAE ITEMS -- BTL 02MAY2024
-  for (i in 1:max(refset[refset$name!="GP5",]$group_rank)){
 
-    # ----------------------------------------------------------------
-    # -- For each PRO-CTCAE item within the grouping [j], process
-    # ----------------------------------------------------------------
-    group_i = refset[refset$group_rank==i,]
-    plot_combined0 = data.frame()
-    for (j in 1:NROW(group_i)){
-      item = as.character(group_i$name[j])
-
-      if(arm_var != "overall_"){
-        dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, arm_var, item)])
-      } else if (arm_var == "overall_"){
-        dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, item)])
-        dsn0$overall_ = "Overall"
-      }
-
+  if(any(c(dsn_comps, dsn_items) %in% c(proctcae_vars_comp$name, proctcae_vars[proctcae_vars$name!="GP5",]$name))){
+    for (i in 1:max(refset[refset$name!="GP5",]$group_rank)){
 
       # ----------------------------------------------------------------
-      # -- Construct summary measures
+      # -- For each PRO-CTCAE item within the grouping [j], process
       # ----------------------------------------------------------------
-      ## -- Maximum grade post baseline
-      max_post0 = stats::aggregate(dsn0[dsn0[,cycle_var]>baseline_val, item],
-                                   by = list(dsn0[dsn0[,cycle_var]>baseline_val,id_var]),
-                                   FUN=max)
-      colnames(max_post0) = c(id_var, item)
-      max_post0[,cycle_var] = "Maximum*"
-      max_post1 = unique(merge(x=max_post0, y=dsn0[,c(id_var, arm_var)], by=id_var, all.x = TRUE))
+      group_i = refset[refset$group_rank==i,]
+      plot_combined0 = data.frame()
+      for (j in 1:NROW(group_i)){
+        item = as.character(group_i$name[j])
 
-      ## -- Baseline adjusted
-      base_adj0 = dsn0[dsn0[,cycle_var]==baseline_val, c(id_var, item)]
-      colnames(base_adj0)[2] = "base_val"
-
-      base_adj1 = merge(x=dsn0, y=base_adj0, by=id_var, all.x=TRUE)
-      base_adj2 = stats::aggregate(base_adj1[base_adj1[,cycle_var]>baseline_val, item],
-                                   by = list(base_adj1[base_adj1[,cycle_var]>baseline_val,id_var]),
-                                   FUN=max)
-      colnames(base_adj2) = c(id_var, "max_post_bl")
-      base_adj2 = merge(x=base_adj1, y=unique(base_adj2), by=id_var, all.x=TRUE)
-      base_adj2$bl_adjusted = ifelse(!is.na(base_adj2$max_post_bl) & base_adj2$base_val >= base_adj2$max_post_bl,
-                                     0, base_adj2$max_post_bl)
-      base_adj3 = unique(base_adj2[!is.na(base_adj2$bl_adjusted),c(id_var, arm_var, "bl_adjusted")])
-      base_adj3[,cycle_var] = "Adjusted**"
-      colnames(base_adj3)[colnames(base_adj3) == "bl_adjusted"] = item
-
-
-      dsn1 = rbind.data.frame(dsn0, max_post1, base_adj3)
-
-      # ----------------------------------------------------------------
-      # -- Create labels for the bars
-      # ----------------------------------------------------------------
-
-      if(bar_label==0){
-        labs = dsn1[,c(cycle_var, arm_var)]
-        labs = unique(labs[c(cycle_var, arm_var)])
-        labs$bar_lab_opt = NA
-
-      } else if(bar_label==1){
-        labs = stats::aggregate(dsn1[dsn1[,item]>=0,item],
-                                by=list(dsn1[dsn1[,item]>=0,cycle_var],
-                                        dsn1[dsn1[,item]>=0,arm_var]),
-                                FUN=length)
-      } else if(bar_label %in% c(2,4)){
-        labs = stats::aggregate(dsn1[dsn1[,item]>0,item],
-                                by=list(dsn1[dsn1[,item]>0,cycle_var],
-                                        dsn1[dsn1[,item]>0,arm_var]),
-                                FUN=length)
-      } else if(bar_label %in% c(3,5)){
-        labs = stats::aggregate(dsn1[dsn1[,item]>=3,item],
-                                by=list(dsn1[dsn1[,item]>=3,cycle_var],
-                                        dsn1[dsn1[,item]>=3,arm_var]),
-                                FUN=length)
-      }
-      names(labs) = c(cycle_var, arm_var, "bar_lab_opt")
-
-      # -- Force zero counts
-      combo_counts = data.frame(table(dsn1[,cycle_var], dsn1[,arm_var]), stringsAsFactors=FALSE)
-      names(combo_counts) = c(cycle_var, arm_var, "total")
-      combo_counts$flag = 1
-
-      labs2 = merge(x=labs, y=combo_counts, by=c(cycle_var, arm_var), all.y = TRUE)
-
-      if(any(is.na(labs2$bar_lab_opt))){
-        labs2[is.na(labs2$bar_lab_opt),]$bar_lab_opt = 0
-      }
-
-      if(bar_label %in% c(4,5)){
-        labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt=round(labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt/labs2[labs2$bar_lab_opt!=0,]$total,digits=2)*100
-      }
-
-      dsn2 = merge(dsn1, labs2, by = c(cycle_var, arm_var))
-
-      # -- Only one label per cycle/arm combination
-      high = by(dsn2, INDICES = list(dsn2[,cycle_var], dsn2[,arm_var]), FUN = utils::tail, n=1)
-      high2 = do.call("rbind", as.list(high))
-      row_keeps = as.integer(rownames(high2))
-      dsn2[!(1:NROW(dsn2) %in% row_keeps),]$bar_lab_opt = NA
-
-      # ----------------------------------------------------------------
-      # -- Create labels for the cycle_var facets
-      # ----------------------------------------------------------------
-      dsn2$cycle_var_v_plot=factor(ifelse(dsn2[,cycle_var]=="Maximum*",
-                                          "Maximum*",
-                                          ifelse(dsn2[,cycle_var]=="Adjusted**", "Adjusted**",
-                                                 paste0(cycle_var," ", dsn2[,cycle_var]))),
-                                   levels=c(paste0(cycle_var," ", min(dsn0[,cycle_var]):max(dsn0[,cycle_var])),
-                                            "Maximum*",
-                                            "Adjusted**"))
-      dsn2$lab = group_i$lab[j]
-      dsn2$item = item
-      colnames(dsn2)[4] = "grade"
-
-      # -- Append
-      plot_combined0 = rbind.data.frame(plot_combined0, dsn2, stringsAsFactors=FALSE)
-    }
-
-    plot_combined0$grade_item = ifelse(plot_combined0$lab!="Composite", plot_combined0$grade, NA)
-    plot_combined0$grade_comp = ifelse(plot_combined0$lab=="Composite", plot_combined0$grade, NA)
-    plot_combined0$item_lab = factor(plot_combined0$lab, levels=unique(plot_combined0$lab))
-
-    # ----------------------------------------------------------------
-    # -- Color palette options
-    # ----------------------------------------------------------------
-
-    if(colors==1){
-      # -- Default
-      item_col0 = "white"
-      item_col1 = "#90B0D9"
-      item_col2 = "#4D7EBF"
-      item_col3 = "#13478C"
-      item_col4 = "#142233"
-
-      comp_col0 = "white"
-      comp_col1 = "#E5BFC6"
-      comp_col2 = "#D9576E"
-      comp_col3 = "#99293D"
-
-      colset1 = c(
-        "0" = item_col0,
-        "1" = item_col1,
-        "2" = item_col2,
-        "3" = item_col3,
-        "4" = item_col4
-      )
-      colset2 = c(
-        "0" = comp_col0,
-        "1" = comp_col1,
-        "2" = comp_col2,
-        "3" = comp_col3
-      )
-    } else if(colors==2){
-      # -- Qualitative (color-blind friendly)
-      item_col0 = "white"
-      item_col1 = "#0571B0"
-      item_col2 = "#92C5DE"
-      item_col3 = "#F4A582"
-      item_col4 = "#CA0020"
-
-      comp_col0 = "white"
-      comp_col1 = "#A6DBA0"
-      comp_col2 = "#C2A5CF"
-      comp_col3 = "#7B3294"
-
-      colset1 = c(
-        "0" = item_col0,
-        "1" = item_col1,
-        "2" = item_col2,
-        "3" = item_col3,
-        "4" = item_col4
-      )
-      colset2 = c(
-        "0" = comp_col0,
-        "1" = comp_col1,
-        "2" = comp_col2,
-        "3" = comp_col3
-      )
-    } else if(colors==3){
-      # -- Black and white
-      item_col0 = "white"
-      item_col1 = "#E6E6E6"
-      item_col2 = "#BDBDBD"
-      item_col3 = "#636363"
-      item_col4 = "#000000"
-
-      comp_col0 = "white"
-      comp_col1 = "#BDBDBD"
-      comp_col2 = "#636363"
-      comp_col3 = "#000000"
-
-      colset1 = c(
-        "0" = item_col0,
-        "1" = item_col1,
-        "2" = item_col2,
-        "3" = item_col3,
-        "4" = item_col4
-      )
-      colset2 = c(
-        "0" = comp_col0,
-        "1" = comp_col1,
-        "2" = comp_col2,
-        "3" = comp_col3
-      )
-    }
-
-    ## -- Line color adjustments
-    colset1_line = colset1
-    colset1_line[1] = "grey"
-
-    colset2_line = colset2
-    colset2_line[1] = "grey"
-
-    ## -- Optional title
-    title_i = refset[refset$group_rank==i,]$group_lab[1]
-
-    plot_combined0$grade_item = ifelse(plot_combined0$lab!="Composite", plot_combined0$grade, NA)
-    plot_combined0$grade_comp = ifelse(plot_combined0$lab=="Composite", plot_combined0$grade, NA)
-    plot_combined0$item_lab = factor(plot_combined0$lab, levels=unique(plot_combined0$lab))
-
-    # -- Legend components
-    facets = factor(unique(plot_combined0$lab), levels = c("Frequency", "Severity", "Interference", "Composite"))
-
-    foot_note = ""
-    ptsize1="15pt"
-    ptsize2="10pt"
-
-    for (k in facets){
-      if(k=="Frequency"){
-        # freq0 = paste0("<span style='font-size:",ptsize1,"'>\U23CD </span>Never /   ")
-        freq0 = paste0("<span style='font-size:",ptsize1,"'>\U25A1</span> Never /   ")
-        freq1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> Rarely   /   ")
-        freq2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Occasionally   /   ")
-        freq3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Frequently   /   ")
-        freq4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Almost constantly")
-        foot_note = paste0(foot_note, "**Frequency:** ", freq0, freq1, freq2, freq3, freq4, "<br>")
-      } else if(k=="Severity"){
-        # sev0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>None  /  ")
-        sev0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> None  /  ")
-        sev1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, "'>\U25A0</span>  Mild   /   ")
-        sev2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Moderate   /   ")
-        sev3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Severe   /   ")
-        sev4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very severe")
-        foot_note = paste0(foot_note, "**Severity:** ", sev0, sev1, sev2, sev3, sev4, "<br>")
-      } else if(k=="Interference"){
-        # int0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>Not at all  /  ")
-        int0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> Not at all  /  ")
-        int1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> A little bit   /   ")
-        int2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Somewhat   /   ")
-        int3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Quite a bit   /   ")
-        int4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very much")
-
-        # ================================================================
-        # ==== ACCOMMODATION FOR 27A HAIR LOSs AMOUNT =====================
-        # ================================================================
-        if(refset[refset$group_rank==i,]$group_lab[1]=="Hair Loss"){
-          foot_note = paste0(foot_note, "**Amount:** ", int0, int1, int2, int3, int4, "<br>")
-        } else {
-          foot_note = paste0(foot_note, "**Interference:** ", int0, int1, int2, int3, int4, "<br>")
+        if(arm_var != "overall_"){
+          dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, arm_var, item)])
+        } else if (arm_var == "overall_"){
+          dsn0 = stats::na.omit(dsn[,c(id_var, cycle_var, item)])
+          dsn0$overall_ = "Overall"
         }
-        # ================================================================
-        # ================================================================
-        # ================================================================
 
-      } else if(k=="Composite"){
-        # comp0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>0  /  ")
-        comp0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> 0  /  ")
-        comp1 = paste0("<span style='font-size:",ptsize2,";color:", comp_col1 ,";'>\U25A0</span> 1  /  ")
-        comp2 = paste0("<span style='font-size:",ptsize2,";color:", comp_col2 ,";'>\U25A0</span> 2  /  ")
-        comp3 = paste0("<span style='font-size:",ptsize2,";color:", comp_col3 ,";'>\U25A0</span> 3 ")
-        foot_note = paste0(foot_note, "**Composite Grade:** ", comp0, comp1, comp2, comp3, "<br>")
+
+        # ----------------------------------------------------------------
+        # -- Construct summary measures
+        # ----------------------------------------------------------------
+        ## -- Maximum grade post baseline
+        max_post0 = stats::aggregate(dsn0[dsn0[,cycle_var]>baseline_val, item],
+                                     by = list(dsn0[dsn0[,cycle_var]>baseline_val,id_var]),
+                                     FUN=max)
+        colnames(max_post0) = c(id_var, item)
+        max_post0[,cycle_var] = "Maximum*"
+        max_post1 = unique(merge(x=max_post0, y=dsn0[,c(id_var, arm_var)], by=id_var, all.x = TRUE))
+
+        ## -- Baseline adjusted
+        base_adj0 = dsn0[dsn0[,cycle_var]==baseline_val, c(id_var, item)]
+        colnames(base_adj0)[2] = "base_val"
+
+        base_adj1 = merge(x=dsn0, y=base_adj0, by=id_var, all.x=TRUE)
+        base_adj2 = stats::aggregate(base_adj1[base_adj1[,cycle_var]>baseline_val, item],
+                                     by = list(base_adj1[base_adj1[,cycle_var]>baseline_val,id_var]),
+                                     FUN=max)
+        colnames(base_adj2) = c(id_var, "max_post_bl")
+        base_adj2 = merge(x=base_adj1, y=unique(base_adj2), by=id_var, all.x=TRUE)
+        base_adj2$bl_adjusted = ifelse(!is.na(base_adj2$max_post_bl) & base_adj2$base_val >= base_adj2$max_post_bl,
+                                       0, base_adj2$max_post_bl)
+        base_adj3 = unique(base_adj2[!is.na(base_adj2$bl_adjusted),c(id_var, arm_var, "bl_adjusted")])
+        base_adj3[,cycle_var] = "Adjusted**"
+        colnames(base_adj3)[colnames(base_adj3) == "bl_adjusted"] = item
+
+
+        dsn1 = rbind.data.frame(dsn0, max_post1, base_adj3)
+
+        # ----------------------------------------------------------------
+        # -- Create labels for the bars
+        # ----------------------------------------------------------------
+
+        if(bar_label==0){
+          labs = dsn1[,c(cycle_var, arm_var)]
+          labs = unique(labs[c(cycle_var, arm_var)])
+          labs$bar_lab_opt = NA
+
+        } else if(bar_label==1){
+          labs = stats::aggregate(dsn1[dsn1[,item]>=0,item],
+                                  by=list(dsn1[dsn1[,item]>=0,cycle_var],
+                                          dsn1[dsn1[,item]>=0,arm_var]),
+                                  FUN=length)
+        } else if(bar_label %in% c(2,4)){
+          labs = stats::aggregate(dsn1[dsn1[,item]>0,item],
+                                  by=list(dsn1[dsn1[,item]>0,cycle_var],
+                                          dsn1[dsn1[,item]>0,arm_var]),
+                                  FUN=length)
+        } else if(bar_label %in% c(3,5)){
+          labs = stats::aggregate(dsn1[dsn1[,item]>=3,item],
+                                  by=list(dsn1[dsn1[,item]>=3,cycle_var],
+                                          dsn1[dsn1[,item]>=3,arm_var]),
+                                  FUN=length)
+        }
+        names(labs) = c(cycle_var, arm_var, "bar_lab_opt")
+
+        # -- Force zero counts
+        combo_counts = data.frame(table(dsn1[,cycle_var], dsn1[,arm_var]), stringsAsFactors=FALSE)
+        names(combo_counts) = c(cycle_var, arm_var, "total")
+        combo_counts$flag = 1
+
+        labs2 = merge(x=labs, y=combo_counts, by=c(cycle_var, arm_var), all.y = TRUE)
+
+        if(any(is.na(labs2$bar_lab_opt))){
+          labs2[is.na(labs2$bar_lab_opt),]$bar_lab_opt = 0
+        }
+
+        if(bar_label %in% c(4,5)){
+          labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt=round(labs2[labs2$bar_lab_opt!=0,]$bar_lab_opt/labs2[labs2$bar_lab_opt!=0,]$total,digits=2)*100
+        }
+
+        dsn2 = merge(dsn1, labs2, by = c(cycle_var, arm_var))
+
+        # -- Only one label per cycle/arm combination
+        high = by(dsn2, INDICES = list(dsn2[,cycle_var], dsn2[,arm_var]), FUN = utils::tail, n=1)
+        high2 = do.call("rbind", as.list(high))
+        row_keeps = as.integer(rownames(high2))
+        dsn2[!(1:NROW(dsn2) %in% row_keeps),]$bar_lab_opt = NA
+
+        # ----------------------------------------------------------------
+        # -- Create labels for the cycle_var facets
+        # ----------------------------------------------------------------
+        dsn2$cycle_var_v_plot=factor(ifelse(dsn2[,cycle_var]=="Maximum*",
+                                            "Maximum*",
+                                            ifelse(dsn2[,cycle_var]=="Adjusted**", "Adjusted**",
+                                                   paste0(cycle_var," ", dsn2[,cycle_var]))),
+                                     levels=c(paste0(cycle_var," ", min(dsn0[,cycle_var]):max(dsn0[,cycle_var])),
+                                              "Maximum*",
+                                              "Adjusted**"))
+        dsn2$lab = group_i$lab[j]
+        dsn2$item = item
+        colnames(dsn2)[4] = "grade"
+
+        # -- Append
+        plot_combined0 = rbind.data.frame(plot_combined0, dsn2, stringsAsFactors=FALSE)
       }
-    }
 
-    foot1 = "\\*Maximum score or grade reported post-baseline per patient.<br>"
-    foot2a = "\\*\\*Maximum score or grade reported post-baseline per patient when"
-    if(summary_only == TRUE || footnote_break == TRUE){
-      foot2b = " including only scores<br> that were worse than the patient's baseline score."
-    } else {
-      foot2b = " including only scores that were worse than the patient's baseline score."
-    }
+      plot_combined0$grade_item = ifelse(plot_combined0$lab!="Composite", plot_combined0$grade, NA)
+      plot_combined0$grade_comp = ifelse(plot_combined0$lab=="Composite", plot_combined0$grade, NA)
+      plot_combined0$item_lab = factor(plot_combined0$lab, levels=unique(plot_combined0$lab))
 
-    # -- Label footnote addition
-    label_foot = ""
-    if(bar_label %in% c(2,4)){
-      foot_grade = 1
-    }
-    if(bar_label %in% c(3,5)){
-      foot_grade = 3
-    }
-    if(bar_label %in% c(2,3)){
-      foot_symbol = "(n)"
-      foot_type = "number"
-      y_scale_lab = c("0","25","50","75","100", "n ")
-    }
-    if(bar_label %in% c(4,5)){
-      foot_symbol = "(%)"
-      foot_type = "percent"
-      y_scale_lab = c("0","25","50","75","100", "% ")
-    }
+      # ----------------------------------------------------------------
+      # -- Color palette options
+      # ----------------------------------------------------------------
 
-    if(bar_label==1){
-      label_foot = "Column labels (n) show the number of subjects with an observed symptom score or grade.<br>"
-      y_scale_lab = c("0","25","50","75","100", "n ")
-    } else if (bar_label %in% c(2, 3, 4, 5)){
-      label_foot = paste0("Column labels ", foot_symbol, " show the ", foot_type,
-                          " of subjects with symptom score or grade ",
-                          foot_grade," or greater.<br>")
-    }
+      if(colors==1){
+        # -- Default
+        item_col0 = "white"
+        item_col1 = "#90B0D9"
+        item_col2 = "#4D7EBF"
+        item_col3 = "#13478C"
+        item_col4 = "#142233"
 
-    if(cycles_only==TRUE){
-      foot_note = paste0(foot_note, label_foot)
-    } else if(cycles_only==FALSE){
-      foot_note = paste0(foot_note, label_foot, foot1, foot2a, foot2b)
-    }
+        comp_col0 = "white"
+        comp_col1 = "#E5BFC6"
+        comp_col2 = "#D9576E"
+        comp_col3 = "#99293D"
 
-    if(suppress_legend == TRUE){
+        colset1 = c(
+          "0" = item_col0,
+          "1" = item_col1,
+          "2" = item_col2,
+          "3" = item_col3,
+          "4" = item_col4
+        )
+        colset2 = c(
+          "0" = comp_col0,
+          "1" = comp_col1,
+          "2" = comp_col2,
+          "3" = comp_col3
+        )
+      } else if(colors==2){
+        # -- Qualitative (color-blind friendly)
+        item_col0 = "white"
+        item_col1 = "#0571B0"
+        item_col2 = "#92C5DE"
+        item_col3 = "#F4A582"
+        item_col4 = "#CA0020"
+
+        comp_col0 = "white"
+        comp_col1 = "#A6DBA0"
+        comp_col2 = "#C2A5CF"
+        comp_col3 = "#7B3294"
+
+        colset1 = c(
+          "0" = item_col0,
+          "1" = item_col1,
+          "2" = item_col2,
+          "3" = item_col3,
+          "4" = item_col4
+        )
+        colset2 = c(
+          "0" = comp_col0,
+          "1" = comp_col1,
+          "2" = comp_col2,
+          "3" = comp_col3
+        )
+      } else if(colors==3){
+        # -- Black and white
+        item_col0 = "white"
+        item_col1 = "#E6E6E6"
+        item_col2 = "#BDBDBD"
+        item_col3 = "#636363"
+        item_col4 = "#000000"
+
+        comp_col0 = "white"
+        comp_col1 = "#BDBDBD"
+        comp_col2 = "#636363"
+        comp_col3 = "#000000"
+
+        colset1 = c(
+          "0" = item_col0,
+          "1" = item_col1,
+          "2" = item_col2,
+          "3" = item_col3,
+          "4" = item_col4
+        )
+        colset2 = c(
+          "0" = comp_col0,
+          "1" = comp_col1,
+          "2" = comp_col2,
+          "3" = comp_col3
+        )
+      }
+
+      ## -- Line color adjustments
+      colset1_line = colset1
+      colset1_line[1] = "grey"
+
+      colset2_line = colset2
+      colset2_line[1] = "grey"
+
+      ## -- Optional title
+      title_i = refset[refset$group_rank==i,]$group_lab[1]
+
+      plot_combined0$grade_item = ifelse(plot_combined0$lab!="Composite", plot_combined0$grade, NA)
+      plot_combined0$grade_comp = ifelse(plot_combined0$lab=="Composite", plot_combined0$grade, NA)
+      plot_combined0$item_lab = factor(plot_combined0$lab, levels=unique(plot_combined0$lab))
+
+      # -- Legend components
+      facets = factor(unique(plot_combined0$lab), levels = c("Frequency", "Severity", "Interference", "Composite"))
+
       foot_note = ""
-    }
+      ptsize1="15pt"
+      ptsize2="10pt"
 
-    ## ----------------------------------------------------------------
-    ## -- Conditional ggplot object combinations
-    ## ----------------------------------------------------------------
+      for (k in facets){
+        if(k=="Frequency"){
+          # freq0 = paste0("<span style='font-size:",ptsize1,"'>\U23CD </span>Never /   ")
+          freq0 = paste0("<span style='font-size:",ptsize1,"'>\U25A1</span> Never /   ")
+          freq1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> Rarely   /   ")
+          freq2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Occasionally   /   ")
+          freq3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Frequently   /   ")
+          freq4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Almost constantly")
+          foot_note = paste0(foot_note, "**Frequency:** ", freq0, freq1, freq2, freq3, freq4, "<br>")
+        } else if(k=="Severity"){
+          # sev0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>None  /  ")
+          sev0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> None  /  ")
+          sev1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, "'>\U25A0</span>  Mild   /   ")
+          sev2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Moderate   /   ")
+          sev3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Severe   /   ")
+          sev4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very severe")
+          foot_note = paste0(foot_note, "**Severity:** ", sev0, sev1, sev2, sev3, sev4, "<br>")
+        } else if(k=="Interference"){
+          # int0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>Not at all  /  ")
+          int0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> Not at all  /  ")
+          int1 = paste0("<span style='font-size:",ptsize2,";color:", item_col1, ";'>\U25A0</span> A little bit   /   ")
+          int2 = paste0("<span style='font-size:",ptsize2,";color:", item_col2, ";'>\U25A0</span> Somewhat   /   ")
+          int3 = paste0("<span style='font-size:",ptsize2,";color:", item_col3, ";'>\U25A0</span> Quite a bit   /   ")
+          int4 = paste0("<span style='font-size:",ptsize2,";color:", item_col4, ";'>\U25A0</span> Very much")
 
-    # -- Restrict the cycles to be plotted
-    if(!is.na(plot_limit)){
-      plot_combined0$cycle_plot_lim = as.integer(gsub("[^0-9]", "", plot_combined0[,cycle_var]))
-      plot_combined0=plot_combined0[(!is.na(plot_combined0$cycle_plot_lim)&plot_combined0$cycle_plot_lim<=plot_limit)|plot_combined0[,cycle_var] %in% c("Adjusted**","Maximum*"),]
-    }
+          # ================================================================
+          # ==== ACCOMMODATION FOR 27A HAIR LOSs AMOUNT =====================
+          # ================================================================
+          if(refset[refset$group_rank==i,]$group_lab[1]=="Hair Loss"){
+            foot_note = paste0(foot_note, "**Amount:** ", int0, int1, int2, int3, int4, "<br>")
+          } else {
+            foot_note = paste0(foot_note, "**Interference:** ", int0, int1, int2, int3, int4, "<br>")
+          }
+          # ================================================================
+          # ================================================================
+          # ================================================================
 
-    # -- Restrict the cycles to be plotted
-    if(cycle_label == TRUE){
-      names(cycle_labs) = paste0(cycle_var," ", cycle_vals)
-      plot_combined0$cycle_var_v_plot = dplyr::recode(plot_combined0[, "cycle_var_v_plot"], !!!cycle_labs)
-    }
+        } else if(k=="Composite"){
+          # comp0 = paste0("<span style='font-size:",ptsize1,";'>\U23CD </span>0  /  ")
+          comp0 = paste0("<span style='font-size:",ptsize1,";'>\U25A1</span> 0  /  ")
+          comp1 = paste0("<span style='font-size:",ptsize2,";color:", comp_col1 ,";'>\U25A0</span> 1  /  ")
+          comp2 = paste0("<span style='font-size:",ptsize2,";color:", comp_col2 ,";'>\U25A0</span> 2  /  ")
+          comp3 = paste0("<span style='font-size:",ptsize2,";color:", comp_col3 ,";'>\U25A0</span> 3 ")
+          foot_note = paste0(foot_note, "**Composite Score:** ", comp0, comp1, comp2, comp3, "<br>")
+        }
+      }
 
-    # -- Only show summary measures
-    if(summary_only==TRUE){
-      plot_combined0 = plot_combined0[plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*"),]
-    }
+      foot1 = "\\*Maximum score or grade reported post-baseline per patient.<br>"
+      foot2a = "\\*\\*Maximum score or grade reported post-baseline per patient when"
+      if(summary_only == TRUE || footnote_break == TRUE){
+        foot2b = " including only scores<br> that were worse than the patient's baseline score."
+      } else {
+        foot2b = " including only scores that were worse than the patient's baseline score."
+      }
 
-    # -- Do not show summary measures
-    if(cycles_only==TRUE){
-      plot_combined0 = plot_combined0[!(plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*")),]
-    }
+      # -- Label footnote addition
+      label_foot = ""
+      if(bar_label %in% c(2,4)){
+        foot_grade = 1
+      }
+      if(bar_label %in% c(3,5)){
+        foot_grade = 3
+      }
+      if(bar_label %in% c(2,3)){
+        foot_symbol = "(n)"
+        foot_type = "number"
+        y_scale_lab = c("0","25","50","75","100", "n ")
+      }
+      if(bar_label %in% c(4,5)){
+        foot_symbol = "(%)"
+        foot_type = "percent"
+        y_scale_lab = c("0","25","50","75","100", "% ")
+      }
 
-    names(plot_combined0)[names(plot_combined0) == arm_var] = "arm"
-    if(arm_var=="overall_"){plot_combined0$arm=""}
+      if(bar_label==1){
+        label_foot = "Column labels (n) show the number of subjects with an observed symptom score or grade.<br>"
+        y_scale_lab = c("0","25","50","75","100", "n ")
+      } else if (bar_label %in% c(2, 3, 4, 5)){
+        label_foot = paste0("Column labels ", foot_symbol, " show the ", foot_type,
+                            " of subjects with symptom score or grade ",
+                            foot_grade," or greater.<br>")
+      }
 
-    if(summary_highlight == TRUE){
-      plot_combined0$fill_highlight = ifelse(plot_combined0$cycle_var_v_plot %in% c("Maximum*","Adjusted**"), "black",  "#ededed")
-    } else {plot_combined0$fill_highlight = NA}
+      if(cycles_only==TRUE){
+        foot_note = paste0(foot_note, label_foot)
+      } else if(cycles_only==FALSE){
+        foot_note = paste0(foot_note, label_foot, foot1, foot2a, foot2b)
+      }
 
-    # ================================================================
-    # ==== ACCOMMODATION FOR 27A HAIR LOSs AMOUNT ====================
-    # ================================================================
-    if(refset[refset$group_rank==i,]$group_lab[1]=="Hair Loss"){
-      levels(plot_combined0$item_lab) = c("Amount", "Composite", "Interference")
-      plot_combined0[plot_combined0$lab=="Interference",]$item_lab = "Amount"
-    }
+      if(suppress_legend == TRUE){
+        foot_note = ""
+      }
 
-    # ================================================================
-    # ================================================================
-    # ================================================================
+      ## ----------------------------------------------------------------
+      ## -- Conditional ggplot object combinations
+      ## ----------------------------------------------------------------
 
-    # ----------------------------------------------------------------
-    # -- No labels requested
-    # ----------------------------------------------------------------
-    if(bar_label==0){
+      # -- Restrict the cycles to be plotted
+      if(!is.na(plot_limit)){
+        plot_combined0$cycle_plot_lim = as.integer(gsub("[^0-9]", "", plot_combined0[,cycle_var]))
+        plot_combined0=plot_combined0[(!is.na(plot_combined0$cycle_plot_lim)&plot_combined0$cycle_plot_lim<=plot_limit)|plot_combined0[,cycle_var] %in% c("Adjusted**","Maximum*"),]
+      }
+
+      # -- Add labels to cycles to be plotted
+      if(cycle_label == TRUE){
+        names(cycle_labs) = paste0(cycle_var," ", cycle_vals)
+        plot_combined0$cycle_var_v_plot = dplyr::recode(plot_combined0[, "cycle_var_v_plot"], !!!cycle_labs)
+      }
+
+      # -- Only show summary measures
+      if(summary_only==TRUE){
+        plot_combined0 = plot_combined0[plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*"),]
+      }
+
+      # -- Do not show summary measures
+      if(cycles_only==TRUE){
+        plot_combined0 = plot_combined0[!(plot_combined0[,cycle_var] %in% c("Adjusted**", "Maximum*")),]
+      }
+
+      names(plot_combined0)[names(plot_combined0) == arm_var] = "arm"
+      if(arm_var=="overall_"){plot_combined0$arm=""}
+
+      if(summary_highlight == TRUE){
+        plot_combined0$fill_highlight = ifelse(plot_combined0$cycle_var_v_plot %in% c("Maximum*","Adjusted**"), "black",  "#ededed")
+      } else {plot_combined0$fill_highlight = NA}
+
+      # ================================================================
+      # ==== ACCOMMODATION FOR 27A HAIR LOSs AMOUNT ====================
+      # ================================================================
+      if(refset[refset$group_rank==i,]$group_lab[1]=="Hair Loss"){
+        levels(plot_combined0$item_lab) = c("Amount", "Composite", "Interference")
+        plot_combined0[plot_combined0$lab=="Interference",]$item_lab = "Amount"
+      }
+
+      # ================================================================
+      # ================================================================
+      # ================================================================
 
       # ----------------------------------------------------------------
-      # --
+      # -- No labels requested
       # ----------------------------------------------------------------
-      if("Composite" %in% unique(plot_combined0$lab) &
-         sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
+      if(bar_label==0){
 
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
-        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+        # ----------------------------------------------------------------
+        # --
+        # ----------------------------------------------------------------
+        if("Composite" %in% unique(plot_combined0$lab) &
+           sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
 
-          ## -- Individual items
-          ggplot2::scale_fill_manual(values = colset1,
-                                     limits = names(colset1),
-                                     guide = ggplot2::guide_legend(order = 2)) +
-          ggplot2::scale_color_manual(values = colset1_line) +
-          ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_item),],
-                            ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
+          ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
-          ggnewscale::new_scale(new_aes = "fill") +
-          ggnewscale::new_scale(new_aes = "color") +
+            ## -- Individual items
+            ggplot2::scale_fill_manual(values = colset1,
+                                       limits = names(colset1),
+                                       guide = ggplot2::guide_legend(order = 2)) +
+            ggplot2::scale_color_manual(values = colset1_line) +
+            ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_item),],
+                              ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
 
-          # ## -- Composite items
-          ggplot2::scale_fill_manual(values = colset2,
-                                     limits = names(colset2),
-                                     guide = ggplot2::guide_legend(order = 3)) +
-          ggplot2::scale_color_manual(values = colset2_line) +
-          ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_comp),],
-                            ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
+            ggnewscale::new_scale(new_aes = "fill") +
+            ggnewscale::new_scale(new_aes = "color") +
 
-          ggplot2:: scale_y_continuous(labels = c("0","25","50","75","100"),
-                                       breaks = c(0, .25, .5, .75, 1),
-                                       limits = c(0, 1.01)) +
+            # ## -- Composite items
+            ggplot2::scale_fill_manual(values = colset2,
+                                       limits = names(colset2),
+                                       guide = ggplot2::guide_legend(order = 3)) +
+            ggplot2::scale_color_manual(values = colset2_line) +
+            ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_comp),],
+                              ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
 
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
+            ggplot2:: scale_y_continuous(labels = c("0","25","50","75","100"),
+                                         breaks = c(0, .25, .5, .75, 1),
+                                         limits = c(0, 1.01)) +
 
-          ggplot2::labs(caption = foot_note) +
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
 
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
+            ggplot2::labs(caption = foot_note) +
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+        }
+
+        # ----------------------------------------------------------------
+        # -- Individual items only
+        # ----------------------------------------------------------------
+        else if(!("Composite" %in% unique(plot_combined0$lab))){
+
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
+
+            ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+            ## -- Individual items
+            ggplot2::scale_fill_manual(values = colset1,
+                                       limits = names(colset1),
+                                       guide = ggplot2::guide_legend(order = 2)) +
+            ggplot2::scale_color_manual(values = colset1_line) +
+            ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+
+            ggplot2::scale_y_continuous(labels = c("0","25","50","75","100"),
+                               breaks = c(0, .25, .5, .75, 1),
+                               limits = c(0, 1.01)) +
+
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
+
+            ggplot2::labs(caption = foot_note) +
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+
+        }
+
+        # ----------------------------------------------------------------
+        # -- Composite items only
+        # ----------------------------------------------------------------
+        else if("Composite" %in% unique(plot_combined0$lab)&
+                sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
+
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+          ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+            ## -- Composite items
+            ggplot2::scale_fill_manual(values = colset2,
+                                       limits = names(colset2),
+                                       guide = ggplot2::guide_legend(order = 3)) +
+            ggplot2::scale_color_manual(values = colset2_line) +
+            ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
+
+            ggplot2::scale_y_continuous(labels = c("0","25","50","75","100"),
+                               breaks = c(0, .25, .5, .75, 1),
+                               limits = c(0, 1.01)) +
+
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
+
+            ggplot2::labs(caption = foot_note) +
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+
+        }
       }
 
       # ----------------------------------------------------------------
-      # -- Individual items only
+      # -- Labels requested
       # ----------------------------------------------------------------
-      else if(!("Composite" %in% unique(plot_combined0$lab))){
+      else if(bar_label!=0){
 
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(arm)) +
+        # ----------------------------------------------------------------
+        # -- Individual and composite items
+        # ----------------------------------------------------------------
+        if("Composite" %in% unique(plot_combined0$lab) &
+           sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
+
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
 
           ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
 
-          ## -- Individual items
-          ggplot2::scale_fill_manual(values = colset1,
-                                     limits = names(colset1),
-                                     guide = ggplot2::guide_legend(order = 2)) +
-          ggplot2::scale_color_manual(values = colset1_line) +
-          ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+            ## -- Individual items
+            ggplot2::scale_fill_manual(values = colset1,
+                                       limits = names(colset1),
+                                       guide = ggplot2::guide_legend(order = 2)) +
+            ggplot2::scale_color_manual(values = colset1_line) +
+            ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_item),],
+                              ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+            ggnewscale::new_scale(new_aes = "fill") +
+            ggnewscale::new_scale(new_aes = "color") +
 
-          ggplot2::scale_y_continuous(labels = c("0","25","50","75","100"),
-                             breaks = c(0, .25, .5, .75, 1),
-                             limits = c(0, 1.01)) +
 
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
+            ## -- Composite items
+            ggplot2::scale_fill_manual(values = colset2,
+                                       limits = names(colset2),
+                                       guide = ggplot2::guide_legend(order = 3)) +
+            ggplot2::scale_color_manual(values = colset2_line) +
+            ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_comp),],
+                              ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
 
-          ggplot2::labs(caption = foot_note) +
+            ## -- Customize
+            ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
 
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
 
+            ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
+            ggplot2::scale_y_continuous(labels = y_scale_lab,
+                                        breaks = c(0, .25, .5, .75, 1, 1.13),
+                                        limits = c(0, 1.14)) +
+
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
+
+            ggplot2::labs(caption = foot_note) +
+
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              # panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              # strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+        }
+
+        # ----------------------------------------------------------------
+        # -- Individual items only
+        # ----------------------------------------------------------------
+        else if(!("Composite" %in% unique(plot_combined0$lab))){
+
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+          ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+            ## -- Individual items
+            ggplot2::scale_fill_manual(values = colset1,
+                                       limits = names(colset1),
+                                       guide = ggplot2::guide_legend(order = 2)) +
+            ggplot2::scale_color_manual(values = colset1_line) +
+            ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
+
+            ## -- Customize
+            ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
+
+            ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
+            ggplot2::scale_y_continuous(labels = y_scale_lab,
+                                        breaks = c(0, .25, .5, .75, 1, 1.13),
+                                        limits = c(0, 1.14)) +
+
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
+
+            ggplot2::labs(caption = foot_note) +
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+        }
+
+        # ----------------------------------------------------------------
+        # -- Composite items only
+        # ----------------------------------------------------------------
+        else if("Composite" %in% unique(plot_combined0$lab)&
+                sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
+
+          figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
+          ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+
+            ## -- Composite items
+            ggplot2::scale_fill_manual(values = colset2,
+                                       limits = names(colset2),
+                                       guide = ggplot2::guide_legend(order = 3)) +
+            ggplot2::scale_color_manual(values = colset2_line) +
+            ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
+
+            ## -- Customize
+            ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
+
+            ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
+            ggplot2::scale_y_continuous(labels = y_scale_lab,
+                                        breaks = c(0, .25, .5, .75, 1, 1.13),
+                                        limits = c(0, 1.14)) +
+
+            ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
+            ggplot2::xlab(x_label) +
+            ggplot2::ylab(y_label) +
+
+            ggplot2::labs(caption = foot_note) +
+
+            ggplot2::theme(
+              plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
+              plot.title.position = "plot",
+              plot.caption.position =  "plot",
+              axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
+              axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
+              axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
+              legend.position="none",
+              legend.box = "vertical",
+              legend.direction = "horizontal",
+              legend.box.just = "left",
+              panel.grid.major = ggplot2::element_blank(),
+              panel.grid.minor = ggplot2::element_blank(),
+              panel.background = ggplot2::element_rect(color="grey", fill="white"),
+              strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
+              strip.text.y = ggplot2::element_text(angle=90))
+        }
       }
 
-      # ----------------------------------------------------------------
-      # -- Composite items only
-      # ----------------------------------------------------------------
-      else if("Composite" %in% unique(plot_combined0$lab)&
-              sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
+      list_out[[i]] = list()
+      list_out[[i]][[1]] = refset[refset$group_rank==i,]$group_lab[1]
 
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
-        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
+      if (add_item_title == TRUE){
+        list_out[[i]][[2]] = figure_i +
+          ggplot2::ggtitle(refset[refset$group_rank==i,]$group_lab[1])
+      } else {list_out[[i]][[2]] = figure_i}
 
-          ## -- Composite items
-          ggplot2::scale_fill_manual(values = colset2,
-                                     limits = names(colset2),
-                                     guide = ggplot2::guide_legend(order = 3)) +
-          ggplot2::scale_color_manual(values = colset2_line) +
-          ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
-
-          ggplot2::scale_y_continuous(labels = c("0","25","50","75","100"),
-                             breaks = c(0, .25, .5, .75, 1),
-                             limits = c(0, 1.01)) +
-
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
-
-          ggplot2::labs(caption = foot_note) +
-
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
-
-      }
     }
-
-    # ----------------------------------------------------------------
-    # -- Labels requested
-    # ----------------------------------------------------------------
-    else if(bar_label!=0){
-
-      # ----------------------------------------------------------------
-      # -- Individual and composite items
-      # ----------------------------------------------------------------
-      if("Composite" %in% unique(plot_combined0$lab) &
-         sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))>0){
-
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
-
-        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
-
-          ## -- Individual items
-          ggplot2::scale_fill_manual(values = colset1,
-                                     limits = names(colset1),
-                                     guide = ggplot2::guide_legend(order = 2)) +
-          ggplot2::scale_color_manual(values = colset1_line) +
-          ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_item),],
-                            ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
-          ggnewscale::new_scale(new_aes = "fill") +
-          ggnewscale::new_scale(new_aes = "color") +
-
-
-          ## -- Composite items
-          ggplot2::scale_fill_manual(values = colset2,
-                                     limits = names(colset2),
-                                     guide = ggplot2::guide_legend(order = 3)) +
-          ggplot2::scale_color_manual(values = colset2_line) +
-          ggplot2::geom_bar(data = plot_combined0[!is.na(plot_combined0$grade_comp),],
-                            ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
-
-          ## -- Customize
-          ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
-
-
-          ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
-          ggplot2::scale_y_continuous(labels = y_scale_lab,
-                                      breaks = c(0, .25, .5, .75, 1, 1.13),
-                                      limits = c(0, 1.14)) +
-
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
-
-          ggplot2::labs(caption = foot_note) +
-
-
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            # panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            # strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
-      }
-
-      # ----------------------------------------------------------------
-      # -- Individual items only
-      # ----------------------------------------------------------------
-      else if(!("Composite" %in% unique(plot_combined0$lab))){
-
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
-        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
-
-          ## -- Individual items
-          ggplot2::scale_fill_manual(values = colset1,
-                                     limits = names(colset1),
-                                     guide = ggplot2::guide_legend(order = 2)) +
-          ggplot2::scale_color_manual(values = colset1_line) +
-          ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_item), color=as.factor(grade_item)), position = "fill", width = .8) +
-
-          ## -- Customize
-          ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
-
-          ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
-          ggplot2::scale_y_continuous(labels = y_scale_lab,
-                                      breaks = c(0, .25, .5, .75, 1, 1.13),
-                                      limits = c(0, 1.14)) +
-
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
-
-          ggplot2::labs(caption = foot_note) +
-
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
-      }
-
-      # ----------------------------------------------------------------
-      # -- Composite items only
-      # ----------------------------------------------------------------
-      else if("Composite" %in% unique(plot_combined0$lab)&
-              sum(c("Frequency", "Severity", "Interference", "Amount") %in% unique(plot_combined0$lab))==0){
-
-        figure_i = ggplot2::ggplot(plot_combined0, ggplot2::aes(x=arm)) +
-        ggplot2::geom_rect(colour=plot_combined0$fill_highlight, fill="white", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, alpha = 0.2) +
-
-          ## -- Composite items
-          ggplot2::scale_fill_manual(values = colset2,
-                                     limits = names(colset2),
-                                     guide = ggplot2::guide_legend(order = 3)) +
-          ggplot2::scale_color_manual(values = colset2_line) +
-          ggplot2::geom_bar(ggplot2::aes(fill = as.factor(grade_comp), color=as.factor(grade_comp)), position = "fill", width = .8) +
-
-          ## -- Customize
-          ggplot2::geom_hline(yintercept=1.04, linetype="solid", color = "darkgrey") +
-
-          ggplot2::geom_text(ggplot2::aes(y= 1.13, label=bar_lab_opt), size=3, na.rm=TRUE) +
-          ggplot2::scale_y_continuous(labels = y_scale_lab,
-                                      breaks = c(0, .25, .5, .75, 1, 1.13),
-                                      limits = c(0, 1.14)) +
-
-          ggplot2::facet_grid(item_lab~cycle_var_v_plot) +
-          ggplot2::xlab(x_label) +
-          ggplot2::ylab(y_label) +
-
-          ggplot2::labs(caption = foot_note) +
-
-          ggplot2::theme(
-            plot.caption = ggtext::element_markdown(hjust=0, lineheight = -20),
-            plot.title.position = "plot",
-            plot.caption.position =  "plot",
-            axis.title.y = ggplot2::element_text(margin = ggplot2::margin(t = 0, r = 10, b = 0, l = 0)),
-            axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)),
-            axis.text.x = ggplot2::element_text(angle = x_lab_angle, vjust=x_lab_vjust, hjust=x_lab_hjust),
-            legend.position="none",
-            legend.box = "vertical",
-            legend.direction = "horizontal",
-            legend.box.just = "left",
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            panel.background = ggplot2::element_rect(color="grey", fill="white"),
-            strip.background = ggplot2::element_rect(colour="grey", fill="#ededed"),
-            strip.text.y = ggplot2::element_text(angle=90))
-      }
-    }
-
-    list_out[[i]] = list()
-    list_out[[i]][[1]] = refset[refset$group_rank==i,]$group_lab[1]
-
-    if (add_item_title == TRUE){
-      list_out[[i]][[2]] = figure_i +
-        ggplot2::ggtitle(refset[refset$group_rank==i,]$group_lab[1])
-    } else {list_out[[i]][[2]] = figure_i}
-
   }
-
   # ----------------------------------------------------------------
   # --  Other PROs
   # ----------------------------------------------------------------
