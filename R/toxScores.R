@@ -1,5 +1,5 @@
 #' Re-code PRO-CTCAE text responses, apply a zero-imputation procedures, and
-#' construct PRO-CTCAE composite grades.
+#' construct PRO-CTCAE composite scores.
 #'
 #'
 #'    This function takes in a data frame set with PRO-CTCAE survey text
@@ -19,7 +19,7 @@
 #'      \item[EX3]Question 73 of PRO-CTCAE should be: PROCTCAE_73A_IND
 #'    }
 #'
-#'    This function also constructs PRO-CTCAE composite grades. Composite grade
+#'    This function also constructs PRO-CTCAE composite scores. Composite score
 #'    variables for respective PRO-CTCAE item groups are created and named as
 #'    PROCTCAE_##_COMP.
 #'
@@ -42,7 +42,7 @@
 #' @param reformat Reformat PRO-CTCAE text responses to numeric scores. Defaults
 #'   to \code{FALSE}.
 #' @param impute Apply zero-imputation where appropriate. Defaults to \code{FALSE}.
-#' @param composites Construct composite grade using available PRO-CTCAE
+#' @param composites Construct composite score using available PRO-CTCAE
 #'   variables within \code{dsn}. Defaults to \code{FALSE}.
 #' @param short_labels Add PRO-CTCAE short labels to available PRO-CTCAE
 #'   variables within returned object
@@ -50,7 +50,6 @@
 #' @examples
 #' tox_acute_comp = toxScores(dsn = ProAE::tox_acute, composites = TRUE)
 #' @export
-
 
 toxScores = function(dsn,
                      reformat=FALSE,
@@ -80,7 +79,10 @@ toxScores = function(dsn,
 
   # - Do not evaluate yes/no PROCTCAE items in composite grading/imputation
   dsn_items = toupper(names(dsn)[toupper(names(dsn)) %in% proctcae_vars$name])
-  dsn_items_comp = dsn_items[! dsn_items %in% as.character(proctcae_vars$name[proctcae_vars$fmt %in% c("yn_2_fmt", "yn_3_fmt", "yn_4_fmt")])]
+  dsn_items_comp = dsn_items[! dsn_items %in% as.character(proctcae_vars$name[proctcae_vars$fmt %in% c("yn_2_fmt",
+                                                                                                       "yn_3_fmt",
+                                                                                                       "yn_4_fmt",
+                                                                                                       "gp5_fmt")])]
 
   dsn_othrs = names(dsn)[!toupper(names(dsn)) %in% proctcae_vars$name]
 
@@ -94,7 +96,7 @@ toxScores = function(dsn,
     # --- Formatting
     # -------------------------------------------------------------
 
-    fmts = c("int_5_fmt","sev_5_fmt", "sev_6_fmt", "sev_7_fmt", "frq_5_fmt", "frq_7_fmt", "yn_2_fmt", "yn_3_fmt", "yn_4_fmt")
+    fmts = c("int_5_fmt","sev_5_fmt", "sev_6_fmt", "sev_7_fmt", "frq_5_fmt", "frq_7_fmt", "yn_2_fmt", "yn_3_fmt", "yn_4_fmt", "gp5_fmt")
 
     fmt_func = function(dat, fmt){
       if (fmt == "int_5_fmt"){
@@ -168,6 +170,15 @@ toxScores = function(dsn,
                                  "NOT APPLICABLE" = NA,
                                  "PREFER NOT TO ANSWER" = NA))
       }
+      else if (fmt == "gp5_fmt"){
+        as.numeric(dplyr::recode(toupper(dat),
+                                 "NOT AT ALL" = "0",
+                                 "A LITTLE BIT" = "1",
+                                 "SOMEWHAT" = "2",
+                                 "QUITE A BIT" = "3",
+                                 "VERY MUCH" = "4"))
+      }
+
     }
 
     # Convert all PRO-CTCAE items to character to avoid factor issues
