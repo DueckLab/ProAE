@@ -24,25 +24,33 @@ The `toxFigures()` function creates publication quality longitudinal bar charts 
 
 ```{r}
 library(ProAE)
+require(tidyverse)
 ```
 
-In examples 1 and 2, we will use the provided `ProAE::tox_acute` data frame. This data was simulated to demonstrate a common symptomatic AE profile where the drug group experiences acute toxicity followed by symptom abatement over the course of treatment.
+In the following examples, we will use the provided `ProAE::tox_acute` data frame. This data was simulated to demonstrate a common symptomatic AE profile where the drug group experiences acute toxicity followed by symptom abatement over the course of treatment.
 
 In order to use the `toxFigures()` function the data frame needs to be in long format (multiple rows per patient). Additionally, the cycle variable needs to be numeric. This data frame already has composite scores calculated. If this wasn't the case then we could use the `toxScores()` function to calculate the scores first. Alternatively, if your data frame only included frequency/severity PRO-CTCAE items the output would only include Frequency/Severity bar charts.
 
 # Example 1 - Standard Longitudinal Bar Chart
 
-```{r}
+```{r,results='markup'}
 
 acute <- ProAE::tox_acute
+
+names(acute)
   
 ```
 
-```{r, include=FALSE}
+```{r, echo=FALSE}
 
-knitr::kable(head(acute))
+path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxFigures.R"
+
+source(path)
+
+proctcae_vars=ProAE:::proctcae_vars
 
 ```
+
 
 Next, we can use the `toxFigures()` function to create the standard longitudinal bar chart.
 
@@ -85,9 +93,9 @@ Here are some examples:
 3)  include only certain cycles or time points using the `cycle_vals` parameter
 4)  customize the cycle labeling by setting the `cycle_label` parameter to `TRUE` and using the `cycle_labs` to specify the labels
 5)  choose a colorblind-friendly color palette using the `colors` parameter
-6)  modify the x axis label
+6)  modify the x-axis title
 7)  include a box around the summary measures setting the `summary_highlight` parameter to `TRUE`
-8)  adjust the appearance of the x axis label angle using the `x_lab_angle` 
+8)  adjust the appearance of the x-axis labels angle using the `x_lab_angle` 
 and the `x_lab_hjust` parameter
 
 ```{r, results='markup'}
