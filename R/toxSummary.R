@@ -151,146 +151,193 @@ toxSummary <- function(dsn,
     stop("PRO-CTCAE item scores must be an integer between 0 and 4.")
   }
 
-  # ----------------------------------------------------------------
-  # --- Individual-level summary measures - Toxicity - Index function
-  # ----------------------------------------------------------------
-
-  toxicity_index = function(x){ #function
-    # -- Remove NA obs and sort descending
-    x_tmp = sort(x[!is.na(x)], decreasing = TRUE)
-    if(length(x_tmp)==1){# length would be 1 if there was only 1 num in the vector
-      # only one grade
-      ti = x_tmp[1] #ti is just the only num in the vector then
-    } else if(sum(x_tmp[-1])==0){ #-1 takes away the first number (the max).
-      #this tests if there is more than 1 nonzero
-      # only one none-zero grade
-      ti = x_tmp[1] #therefore ti is just the max (if only nonzero)
-    } else {
-      # compute
-      ti = x_tmp[1]
-      for(i in 1:(length(x_tmp)-1)){
-        ti = ti + (x_tmp[i+1] / prod((1+x_tmp[1:i]))) #is there a rounding issue?
-        # -- prevent default rounding for large decimal portions
-        if(ti-x_tmp[1] >= 0.9999){
-          ti = x_tmp[1] + 0.9999
-          # send warning to console / log that some estimates of the toxicity index were seen to
-          # round out of a logical range, therefore subsequent round was prevented and returned
-          # with estimates of [integer].9999
-          break
-        }
-      }
-    }
-    return(ti)
-  }
 
   # ----------------------------------------------------------------
   # --- Individual-level summary measures
   # ----------------------------------------------------------------
 
-  if(summary_measure %in% c("max", "max_post_bl", "bl_adjusted", "toxicity_index")){
-    ## -----------------------------
-    ## -- Max
-    ## -- This is the largest score across all timepoints for any observed data
-    ## -----------------------------
+  if(summary_measure %in% c("max", "max_post_bl", "bl_adjusted","toxicity_index")){
 
-    if(summary_measure == "max"){
-      dsn_summary <- dsn %>%
-        dplyr::group_by(get(id_var)) %>%
-        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~ifelse(all(is.na(.)), NA, max(., na.rm = TRUE))), .groups = "drop")
-    }
 
-    ## -----------------------------
-    ## -- Max post-baseline
-    ## -- This is the largest score across all timepoints after the baseline. Must have data after baseline to
-    ## -- calculate this summary measure, otherwise return NA
-    ## -----------------------------
+    # -------------APPLIES TO ALL SUMMARY MEASURES---------------------------------------------------
+    refset = data.frame(name = dsn_items) #change to refset (now a df)
+    out = unique(dsn[id_var]) #df with only id. will be merged onto for each dsn_item column
 
-    if(summary_measure == "max_post_bl") {
-      dsn_summary <- dsn %>%
-        dplyr::mutate(baseline = dplyr::if_else(get(cycle_var) == baseline_val, TRUE, FALSE)) %>%
-        dplyr::group_by(get(id_var)) %>%
-        dplyr::filter(!baseline) %>%
-        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~ifelse(all(is.na(.)), NA, max(., na.rm = TRUE))), .groups = "drop")
-    }
 
-    ## -----------------------------
-    ## -- Baseline adjusted max
-    ## -- This is the largest score across all timepoints after the baseline, including only scores that were
-    ## -- worse than the patient's baseline score. Must have data at baseline and after baseline to
-    ## -- calculate this summary measure, otherwise return NA
+    for(i in 1:nrow(refset)){ #loop through each dsn_item
 
-    ## -- Function to calculate baseline adjustment summary statistic.
-    ## -- scores := a numeric vector for each cycle for a given id
-    ## -- baseline := a boolean vector identifying which score is the baseline score
-    ## -----------------------------
+      item = as.character(refset$name[i]) #item is current dsn_item
 
-    bl_adjusted <- function(scores, baseline) {
-      if(length(scores) == 1 | sum(baseline) == 0){
-        return(NA)
-      } else {
-        base_val = scores[which(baseline)]
-        max_post_bl_val = ifelse(all(is.na(scores[which(!baseline)])), NA, max(scores[which(!baseline)], na.rm = TRUE))
-        ifelse(base_val >= max_post_bl_val, 0, max_post_bl_val)
-      }
-    }
 
-    if(summary_measure == "bl_adjusted"){
-      dsn_summary = dsn %>%
-        dplyr::mutate(baseline = (get(cycle_var) == baseline_val)) %>%
-        dplyr::group_by(get(id_var)) %>%
-        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~bl_adjusted(., baseline)), .groups = "drop")
-    }
+      # -------------TOXICITY INDEX---------------------------------------------------------------
 
-    ## -----------------------------
-    ## -- Toxicity index
-    ## -----------------------------
-
-    toxicity_index = function(x){
-      # -- Remove NA obs and sort descending
-      x_tmp = sort(x[!is.na(x)], decreasing = TRUE)
-      if(length(x_tmp)==1){
-        # only one grade
-        ti = x_tmp[1]
-      } else if(sum(x_tmp[-1])==0){
-        # only one none-zero grade
-        ti = x_tmp[1]
-      } else {
-        # compute
-        ti = x_tmp[1]
-        for(i in 1:(length(x_tmp)-1)){
-          ti = ti + (x_tmp[i+1] / prod((1+x_tmp[1:i])))
-          # -- prevent default rounding for large decimal portions
-          if(ti-x_tmp[1] >= 0.9999){
-            ti = x_tmp[1] + 0.9999
-            # send warning to console / log that some estimates of the toxicity index were seen to
-            # round out of a logical range, therefore subsequent round was prevented and returned
-            # with estimates of [integer].9999
-            break
+      toxicity_index = function(x){ #function
+        # -- Remove NA obs and sort descending
+        x_tmp = sort(x[!is.na(x)], decreasing = TRUE)
+        if(length(x_tmp)==1){# length would be 1 if there was only 1 num in the vector
+          # only one grade
+          ti = x_tmp[1] #ti is just the only num in the vector then
+        } else if(sum(x_tmp[-1])==0){ #-1 takes away the first number (the max).
+          #this tests if there is more than 1 nonzero
+          # only one none-zero grade
+          ti = x_tmp[1] #therefore ti is just the max (if only nonzero)
+        } else {
+          # compute
+          ti = x_tmp[1]
+          for(i in 1:(length(x_tmp)-1)){
+            ti = ti + (x_tmp[i+1] / prod((1+x_tmp[1:i]))) #is there a rounding issue?
+            # -- prevent default rounding for large decimal portions
+            if(ti-x_tmp[1] >= 0.9999){
+              ti = x_tmp[1] + 0.9999
+              # send warning to console / log that some estimates of the toxicity index were seen to
+              # round out of a logical range, therefore subsequent round was prevented and returned
+              # with estimates of [integer].9999
+              break
+            }
           }
         }
+        return(ti)
       }
-      return(ti)
+
+
+      if(summary_measure == "toxicity_index"){
+
+        tox_vector = vector('list',nrow(unique(dsn[id_var]))) #vector to add tox index scores
+        id_vector = vector('list',nrow(unique(dsn[id_var]))) #vector to keep track of which id on
+
+        id_list = as.list(unique(dsn[,id_var]))
+
+
+        for(j in 1:length(id_list)){ #loop through each unique id variable
+
+          id = id_list[j] #id is the id actual value. J is th number to be subset
+          x = dsn[dsn[,id_var] == id,c(item)] #numeric of all values in the "item" column for id = j
+          t_index = toxicity_index(x) #using the previously defined function: outputs toxicity index
+          tox_vector[[j]] = t_index #add tox score to score vector
+          id_vector[[j]]  = id #add j to id vector
+
+        }
+
+
+
+        tox_df = cbind(as.data.frame(unlist(tox_vector)),as.data.frame(unlist(id_vector))) #bind the two vectors together
+        colnames(tox_df) = c(item,id_var) #change col names
+
+        out = merge(x = tox_df,y = out, by = id_var) #every loop through items, add one more column for each item
+
+      }else{
+
+        # -------------APPLIES TO ANY SUMMARY MEASURE OTHER THAN TOXICITY-------------------------
+
+
+        #----------------MAX VALUE UNAJUSTED-----------------------------------------------------------------------
+
+        if(summary_measure == "max"){
+          max_overall = stats::aggregate(dsn[item],
+                                         by = dsn[id_var],
+                                         FUN = max, na.rm = T)
+
+          max_overall[,2] = as.integer(max_overall[,2])
+
+
+          #the final output!
+          out = merge(x =max_overall,y = out, by = id_var)
+
+
+        }else{#------------APPLIES TO MAX POST BASELINE OR BASELINE ADJUSTED---------------#\
+
+          #create df with data only when cycle_var = baseline var
+          #end result: one id column, and one item col that shows the baseline value per each id
+          base_adj0 = dsn[dsn[,cycle_var] == baseline_val, c(id_var,item)]
+          colnames(base_adj0)[2] = "base_val"
+
+          #merge this with regular dsn
+          #end result: a new df with all dsn cols + base_val col that has the same value for all
+          #rows of the same id
+          base_adj1 = merge(x = dsn, y = base_adj0, by = id_var, all.x = T)
+
+
+          #this essentially creates max post baseline
+          base_adj2 = stats::aggregate(base_adj1[base_adj1[,cycle_var]>baseline_val, item],
+                                       by = list(base_adj1[base_adj1[,cycle_var]>baseline_val, id_var]),
+                                       FUN = max,na.rm = T)
+
+          base_adj2[,2] = as.integer(base_adj2[,2])
+
+          #base_adj2[,2] = as.integer(base_adj2[,2])
+          #update names
+          colnames(base_adj2) = c(id_var,"max_post_bl") #max post baseline
+
+          #have to make sure the NA's are handled the right way
+          base_adj2$max_pbl_updated =
+            ifelse(is.na(base_adj2$max_post_bl)==T | is.infinite(base_adj2$max_post_bl)==T,NA,
+                   base_adj2$max_post_bl) #as long as max post bl is not NA, then keep
+
+          #drop max_post_bl variable: works up to here
+          base_adj2 = subset(base_adj2, select = -max_post_bl )
+
+
+          #----------------Max Post-Baseline-------------------#
+
+          if(summary_measure == "max_post_bl"){
+
+            #create final df to use for max pbl
+            max_pbl_final = base_adj2
+            colnames(max_pbl_final) = c(id_var,item)
+
+            # colnames(base_adj2) = c(id_var,"max_post_bl")
+
+
+            #merge for each df. Out should be the dsn_summary
+            out = merge(x = max_pbl_final,y = out, by = id_var)
+
+            #----------------Adjusted Baseline-------------------#
+
+          }else{
+            #create a data frame that has baseline value and max_post_bl value
+            base_adj3 = merge(x = base_adj1, y = unique(base_adj2), by = id_var, all.x = T)#all.x = T
+            ####THIS IS WHERE WE ARE HAVING THE PROBLEM> NEED TO TROUBLSHOOT HERE!!!
+            #browser()
+
+
+            #NA check: if max post bl is na and bl is bigger than max post bl = 0
+            base_adj3$adj_bl200=ifelse(!is.na(base_adj3$max_pbl_updated) & base_adj3$base_val>=base_adj3$max_pbl_updated,0,
+                                       ifelse(is.na(base_adj3$base_val)==TRUE,NA,
+                                              base_adj3$max_pbl_updated))
+
+            #other code which somehow works just fine
+            # base_adj3$bl_adjusted =
+            #   ifelse(!is.na(base_adj3$max_post_bl) & base_adj3$base_val>=base_adj3$max_post_bl,0,
+            #          ifelse(is.na(base_adj3$base_val)==TRUE,NA, #question: should I include this line?
+            #                 base_adj3$max_post_bl))
+
+            #get it back to only one id and change the name so that it is the dsn_item name
+            base_adj4 = base_adj3[base_adj3[,cycle_var] == baseline_val, c(id_var,"adj_bl200")]
+            colnames(base_adj4)[colnames(base_adj4) == "adj_bl200"] = item
+
+            #merge for each df. Out should be the dsn_summary
+            out = merge(x = base_adj4,y = out, by = id_var)
+          }
+
+        }
+
+      }
     }
 
-    if(summary_measure == "toxicity_index"){
-      dsn_summary = dsn %>%
-        dplyr::group_by(get(id_var)) %>%
-        dplyr::summarise(dplyr::across(dplyr::all_of(dsn_items), ~toxicity_index(.)), .groups = "drop")
-    }
+    ## -- rearrange dsn_items columns in the in right order!!
 
-    ## -----------------------------
-    ## -----------------------------
-
-    ## -- update id_var name
-    colnames(dsn_summary)[1] = id_var
+    #new code
+    order_new = c(id_var,dsn_items)
+    data.table::setcolorder(out, order_new)
+    #out[sapply(out, is.infinite)] <- NA #changes any infinities to NA (hopefully)
+    dsn_summary = out
 
     ## -- add back in any previous id's that were filtered out
-    dsn_summary_complete = dsn %>%
-      dplyr::select(dplyr::all_of(id_var)) %>%
-      dplyr::distinct() %>%
-      dplyr::left_join(dsn_summary, by = dplyr::all_of(id_var))
-  }
 
+    ##note:  this was previously dplyr code
+    #my code:
+    dsn_summary_complete = merge(dsn_summary,unique(dsn[id_var]), by = id_var)
+  }
 
   ## ----------------------------------------------------------------
   ## --- Group-level summary measures
