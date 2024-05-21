@@ -111,10 +111,16 @@ toxSummary <- function(dsn,
   dsn_items = dsn_items0[! dsn_items0 %in% as.character(proctcae_vars$name[proctcae_vars$fmt %in% c("yn_2_fmt", "yn_3_fmt", "yn_4_fmt")])]
 
   ## -- Composites
-  proctcae_vars_comp0 = proctcae_vars[,-1] %>% dplyr::mutate_if(is.factor, as.character)
-  proctcae_vars_comp0 = proctcae_vars_comp0[!proctcae_vars_comp0$name %in% as.character(proctcae_vars_comp0$name[proctcae_vars_comp0$fmt %in% c("yn_2_fmt",
-                                                                                                                                                "yn_3_fmt",
-                                                                                                                                                "yn_4_fmt")]),]
+  proctcae_vars_comp0 = proctcae_vars[,-1] #gets rid of the fmt column
+  fact_cols = sapply(proctcae_vars_comp0, is.factor) # Identify all factor columns
+  proctcae_vars_comp0[fact_cols] = lapply(proctcae_vars_comp0[fact_cols], as.character)
+  # if they are factor, change them to character
+
+
+  proctcae_vars_comp0 = proctcae_vars_comp0[!proctcae_vars_comp0$name %in%
+                                              as.character(proctcae_vars_comp0$name[proctcae_vars_comp0$fmt %in%
+                                                                                      c("yn_2_fmt","yn_3_fmt","yn_4_fmt")]),]
+
   proctcae_vars_comp = c()
   proctcae_vars_comp$name = paste0(substr(proctcae_vars_comp0$name, 1, nchar(proctcae_vars_comp0$name)-5), "_COMP")
   proctcae_vars_comp$short_label = sub(proctcae_vars_comp0$short_label, pattern = " [[:alpha:]]*$", replacement = "")
@@ -122,6 +128,7 @@ toxSummary <- function(dsn,
   dsn_comps = toupper(names(dsn)[toupper(names(dsn)) %in% proctcae_vars_comp$name])
 
   dsn_items = c(dsn_items, dsn_comps)
+  dsn_items =dsn_items[sort.list(dsn_items)]
 
   # ----------------------------------------------------------------
   # --- Checks 2/2
