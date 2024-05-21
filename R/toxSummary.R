@@ -152,6 +152,38 @@ toxSummary <- function(dsn,
   }
 
   # ----------------------------------------------------------------
+  # --- Individual-level summary measures - Toxicity - Index function
+  # ----------------------------------------------------------------
+
+  toxicity_index = function(x){ #function
+    # -- Remove NA obs and sort descending
+    x_tmp = sort(x[!is.na(x)], decreasing = TRUE)
+    if(length(x_tmp)==1){# length would be 1 if there was only 1 num in the vector
+      # only one grade
+      ti = x_tmp[1] #ti is just the only num in the vector then
+    } else if(sum(x_tmp[-1])==0){ #-1 takes away the first number (the max).
+      #this tests if there is more than 1 nonzero
+      # only one none-zero grade
+      ti = x_tmp[1] #therefore ti is just the max (if only nonzero)
+    } else {
+      # compute
+      ti = x_tmp[1]
+      for(i in 1:(length(x_tmp)-1)){
+        ti = ti + (x_tmp[i+1] / prod((1+x_tmp[1:i]))) #is there a rounding issue?
+        # -- prevent default rounding for large decimal portions
+        if(ti-x_tmp[1] >= 0.9999){
+          ti = x_tmp[1] + 0.9999
+          # send warning to console / log that some estimates of the toxicity index were seen to
+          # round out of a logical range, therefore subsequent round was prevented and returned
+          # with estimates of [integer].9999
+          break
+        }
+      }
+    }
+    return(ti)
+  }
+
+  # ----------------------------------------------------------------
   # --- Individual-level summary measures
   # ----------------------------------------------------------------
 
