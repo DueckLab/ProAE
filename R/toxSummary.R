@@ -319,8 +319,6 @@ toxSummary <- function(dsn,
 
     ## -- add back in any previous id's that were filtered out
 
-    ##note:  this was previously dplyr code
-    #my code:
     dsn_summary_complete = merge(dsn_summary,unique(dsn[id_var]), by = id_var)
   }
   ## ----------------------------------------------------------------
