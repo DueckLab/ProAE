@@ -526,11 +526,11 @@ toxAUC = function(dsn,
 
           # -- Worsening
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
 
            ggpattern::geom_ribbon_pattern(
             data = ribbon_pattern_dat,
-            ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = .data[[arm_var]]),
+            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = .data[[arm_var]]),
             inherit.aes = FALSE,
             pattern_alpha = 0.4,
             fill            = NA,
@@ -541,7 +541,7 @@ toxAUC = function(dsn,
           ) +
 
           # --- Add horizontal line indicating baseline value
-          ggplot2::geom_segment(ggplot2::aes(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = .data[[arm_var]]),
+          ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, colour = .data[[arm_var]]),
                                 linetype="dashed",
                                 data = df,
                                 inherit.aes = FALSE) +
@@ -754,13 +754,13 @@ toxAUC = function(dsn,
 
           # -- Worsening
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
 
           ggpattern::geom_ribbon_pattern(
             data = ribbon_pattern_dat,
-            ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = .data[[arm_var]]),
+            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = .data[[arm_var]]),
             inherit.aes = FALSE,
             pattern_alpha = 0.4,
             fill            = NA,
@@ -771,7 +771,7 @@ toxAUC = function(dsn,
           ) +
 
           # --- Add horizontal line indicating baseline value
-          ggplot2::geom_segment(ggplot2::aes(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = .data[[arm_var]]),
+          ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, colour = .data[[arm_var]]),
                                 linetype="dashed",
                                 data = df,
                                 inherit.aes = FALSE) +
@@ -871,15 +871,15 @@ toxAUC = function(dsn,
           ggplot2::geom_point(ggplot2::aes(color=.data[[arm_var]])) +
           # -- Worsening
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                               ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
+                               ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                               ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                               ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
-                               ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                               ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
 
           ggpattern::geom_ribbon_pattern(
             data = ribbon_pattern_dat,
-            ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], pattern_fill = data[[arm_var]], pattern_color = data[[arm_var]]),
+            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = data[[arm_var]], pattern_color = data[[arm_var]]),
             inherit.aes = FALSE,
             pattern_alpha = 0.4,
             fill            = NA,
@@ -890,7 +890,7 @@ toxAUC = function(dsn,
           ) +
 
           # --- Add horizontal line indicating baseline value
-          ggplot2::geom_segment(ggplot2::aes(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = data[[arm_var]]),
+          ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, colour = data[[arm_var]]),
                                 linetype="dashed",
                                 data = df,
                                 inherit.aes = FALSE) +
@@ -1002,17 +1002,17 @@ toxAUC = function(dsn,
           ggplot2::geom_point(ggplot2::aes(color=.data[[arm_var]])) +
           # -- Worsening
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm3, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm4, ],
-                      ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                      ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
 
           ggpattern::geom_ribbon_pattern(
             data = ribbon_pattern_dat,
-            ggplot2::aes(x = .data[[cycle_var]], ymin = "bl_val", ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = arm_var),
+            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = arm_var),
             inherit.aes = FALSE,
             pattern_alpha = 0.4,
             fill            = NA,
@@ -1023,7 +1023,7 @@ toxAUC = function(dsn,
           ) +
 
           # --- Add horizontal line indicating baseline value
-          ggplot2::geom_segment(ggplot2::aes(x = "x1", y = "y1", xend = "x2", yend = "y2", colour = .data[[arm_var]]),
+          ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, colour = .data[[arm_var]]),
                        linetype="dashed",
                        data = df,
                        inherit.aes = FALSE) +
