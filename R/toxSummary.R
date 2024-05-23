@@ -231,12 +231,14 @@ toxSummary <- function(dsn,
         #----------------MAX VALUE UNAJUSTED-----------------------------------------------------------------------
 
         if(summary_measure == "max"){
+
+          suppressWarnings({
           max_overall = stats::aggregate(dsn[item],
                                          by = dsn[id_var],
                                          FUN = max, na.rm = T)
 
           max_overall[,2] = as.integer(max_overall[,2])
-
+          })
 
           #the final output!
           out = merge(x =max_overall,y = out, by = id_var)
@@ -256,12 +258,13 @@ toxSummary <- function(dsn,
 
 
           #this essentially creates max post baseline
+          suppressWarnings({
           base_adj2 = stats::aggregate(base_adj1[base_adj1[,cycle_var]>baseline_val, item],
                                        by = list(base_adj1[base_adj1[,cycle_var]>baseline_val, id_var]),
                                        FUN = max,na.rm = T)
 
           base_adj2[,2] = as.integer(base_adj2[,2])
-
+          })
           #base_adj2[,2] = as.integer(base_adj2[,2])
           #update names
           colnames(base_adj2) = c(id_var,"max_post_bl") #max post baseline
