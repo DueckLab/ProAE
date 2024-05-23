@@ -1,0 +1,78 @@
+---
+title: "The toxAUC function"
+author: "Brie Noble, Blake Langlais"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 3
+vignette: |
+  %\VignetteIndexEntry{The toxAUC function}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(eval = TRUE, message = FALSE, results = 'asis', comment='')
+options(width = 200)
+
+```
+
+# Introduction
+
+The `toxAUC()` function gives the user a set of tools to assess incremental AUC adjusted for baseline symptoms. The accumulated area of the symptomatic AE profile above baseline can be interpreted as symptom worsening driven by treatment. Arm-level AUCs can be compared statistically using the function parameters. 
+
+
+```{r}
+library(ProAE)
+require(knitr)
+require(tidyverse)
+
+```
+
+
+In the example below, we will use the provided `ProAE::tox_acute` data
+frame. This data was simulated to demonstrate a common symptomatic AE
+profile where the drug group experiences acute toxicity followed by
+symptom abatement over the course of treatment.
+
+In order to use the `toxAUC()` function the data frame needs to be in
+long format (multiple rows per patient). Additionally, the cycle
+variable needs to be numeric. 
+
+
+# Example 1 - Calculate and compare baseline adjusted incremental area under the curve by arm
+
+```{r, results='markup'}
+
+acute <- ProAE::tox_acute
+
+colnames(acute)
+  
+```
+
+```{r, echo=FALSE}
+
+path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxAUC.R"
+
+source(path)
+
+proctcae_vars=ProAE:::proctcae_vars
+
+```
+
+
+```{r,warnings=FALSE,results='markup'}
+
+AUC = toxAUC(dsn = acute,
+             id_var = "id",
+             cycle_var = "Cycle",
+             arm = "arm",
+             baseline_val = 1,
+             permute_tests = TRUE)
+
+
+```
