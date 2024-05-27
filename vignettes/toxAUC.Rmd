@@ -23,8 +23,7 @@ options(width = 200)
 
 # Introduction
 
-The `toxAUC()` function gives the user a set of tools to assess incremental AUC adjusted for baseline symptoms. The accumulated area of the symptomatic AE profile above baseline can be interpreted as symptom worsening driven by treatment. Arm-level AUCs can be compared statistically using the function parameters. 
-
+The `toxAUC()` function gives the user a set of tools to assess incremental AUC (iAUC) adjusted for baseline symptoms. The accumulated area of the symptomatic AE profile above baseline can be interpreted as symptom worsening driven by treatment. Arm-level iAUCs can be compared statistically using the function parameters. 
 
 ```{r}
 library(ProAE)
@@ -64,6 +63,7 @@ proctcae_vars=ProAE:::proctcae_vars
 
 ```
 
+Below is the call for the `toxAUC()` function which will graph the the iAUC above baseline for two arms over the course of the trial. It will also perform a permutation test and provide a two-sided p value comparing the iAUC between the two arms.
 
 ```{r,warnings=FALSE,results='markup'}
 
@@ -77,7 +77,12 @@ AUC = toxAUC(dsn = acute,
 
 ```
 
-```{r}
-figure_3[[3]]
+Using the specified index from the table we can examine the table for the composite
+score for Nausea
+
+```{r fig.width=9,fig.height=4}
+
+AUC[[3]][2]
+
 ```
 
