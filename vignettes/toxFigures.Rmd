@@ -20,7 +20,7 @@ options(width = 200)
 
 # Introduction
 
-The `toxFigures()` function creates publication quality longitudinal bar charts of symptomatic AE profiles. Frequency distributions of PRO-CTCAE scores can be shown over the course of the trial and can be stratified by treatment arm. An R list object is returned with the available PRO-CTCAE items indexed as elements of the list beside a reference table.
+The `toxFigures()` function creates publication quality longitudinal bar charts of symptomatic AE profiles. Frequency distributions of PRO-CTCAE scores can be shown over the course of the trial and can be stratified by treatment arm. An R list object is returned with the available PRO-CTCAE items indexed as elements of the list beside a reference table. Each figure item is a ggplot2 object. 
 
 ```{r}
 library(ProAE)
