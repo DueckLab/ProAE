@@ -70,9 +70,14 @@ proctcae_vars=ProAE:::proctcae_vars
 AUC = toxAUC(dsn = acute,
              id_var = "id",
              cycle_var = "Cycle",
-             arm = "arm",
+             arm_var = "arm",
              baseline_val = 1,
              permute_tests = TRUE)
 
 
 ```
+
+```{r}
+figure_3[[3]]
+```
+
