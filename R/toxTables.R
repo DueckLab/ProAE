@@ -41,7 +41,7 @@
 #' @param risk_ci_alpha A number between 0 and 1. Specify the alpha level of
 #'   the risk difference confidence intervals. Defaults to \code{0.05}.
 #' @return A list object with data.frame elements for individual items and
-#'   composite grades.
+#'   composite scores.
 #' @importFrom magrittr %>%
 #' @examples
 #' toxTables(dsn=ProAE::tox_acute, id_var="id", cycle_var="Cycle", baseline_val=1)

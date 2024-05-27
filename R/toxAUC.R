@@ -107,8 +107,7 @@ toxAUC = function(dsn,
                   cycle_label = FALSE,
                   cycle_vals = NA,
                   cycle_labs = NA){
-
-
+  
   # ----------------------------------------------------------------
   # --- Checks 1
   # ----------------------------------------------------------------
@@ -417,7 +416,7 @@ toxAUC = function(dsn,
   # ------------------------------------------------------------------------------
   # --- Allow for bootstrap for alpha-level confidence intervals for difference in AUC between 2 arms (diff 2 arms)
   # ------------------------------------------------------------------------------
-
+    
   if(nrow(data.frame(table(dsn[,arm_var]))) == 2 & bootstrap_ci == TRUE){
 
     unique_ids_arm1 = unique(dsn[dsn[,arm_var] == unique(dsn[,arm_var])[1],id_var])
@@ -449,9 +448,8 @@ toxAUC = function(dsn,
         names(group_out2) = item
         bladj_group_out_floor_inter_boot = cbind(group_out1, group_out2)
         bladj_group_out_ceiling_inter_boot = cbind(group_out1, group_out2)
-      }
-
-
+     }
+    
       # --- WORSENING - Baseline adjusted (floor AUC is zero)
       for(i in unique(group_auc_boot[,arm_var])){
         bl_val = group_auc_boot[group_auc_boot[,arm_var]==i & !is.na(group_auc_boot[,item]) & group_auc_boot[,cycle_var]==baseline_val,item]
@@ -739,7 +737,6 @@ toxAUC = function(dsn,
                                      temp_i,
                                      P = c(worse_pv, improv_pv))
 
-
         AUC_table_display = AUC_table
         AUC_table_display$p_fmt = ifelse(AUC_table_display$P == 1, "1.0000",
                                          ifelse(AUC_table_display$P < 0.0001, "<0.0001",
@@ -928,7 +925,6 @@ toxAUC = function(dsn,
             pattern_density = 0.5,
             show.legend = FALSE
           )
-
       }
 
     } else if(nrow(bl_dat)==3){
@@ -959,6 +955,7 @@ toxAUC = function(dsn,
                           "iAUC above baseline horizonal",
                           "iAUC below baseline horizonal")
 
+
       ribbon_dat = ribbon_plot[[i]]
 
       ribbon_pattern_dat0 = ribbon_dat[ribbon_dat[,item] <= ribbon_dat$bl_val, ]
@@ -967,8 +964,9 @@ toxAUC = function(dsn,
       ribbon_pattern_dat2 = ribbon_pattern_dat0[ribbon_pattern_dat0[,item] <= ribbon_pattern_dat0$bl_val & ribbon_pattern_dat0[,arm_var] == name_arm2, ]
       ribbon_pattern_dat3 = ribbon_pattern_dat0[ribbon_pattern_dat0[,item] <= ribbon_pattern_dat0$bl_val & ribbon_pattern_dat0[,arm_var] == name_arm3, ]
 
-      ribbon_pattern_dat = rbind.data.frame(ribbon_pattern_dat1[-1,], ribbon_pattern_dat2[-1,], ribbon_pattern_dat3[-1,])
 
+      ribbon_pattern_dat = rbind.data.frame(ribbon_pattern_dat1[-1,], ribbon_pattern_dat2[-1,], ribbon_pattern_dat3[-1,])
+       
       item_title = ref_labs[ref_labs[,"name"]==item, "short_label"]
 
       df1 <- data.frame(x1 = baseline_val, x2 = cycle_limit, y1 = bl_arm1, y2 = bl_arm1, arm = name_arm1)
@@ -1126,6 +1124,7 @@ toxAUC = function(dsn,
                           "iAUC above baseline horizonal",
                           "iAUC below baseline horizonal")
 
+
       ribbon_dat = ribbon_plot[[i]]
 
       ribbon_pattern_dat0 = ribbon_dat[ribbon_dat[,item] <= ribbon_dat$bl_val, ]
@@ -1267,11 +1266,12 @@ toxAUC = function(dsn,
             show.legend = FALSE
           )
       }
+        
+        auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
+        names(auc_tab_out) = t(anno_tab)[1,]
+        rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
+      }
 
-      auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
-      names(auc_tab_out) = t(anno_tab)[1,]
-      rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
-    }
     # ------------------------------------------------------------------------------
     # --- Allow for permutation tests for the difference in AUC between 2 arms (iff 2 arms)
     # ------------------------------------------------------------------------------
