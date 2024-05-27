@@ -1,0 +1,105 @@
+---
+title: "The toxTables function"
+author: "Brie Noble, Blake Langlais"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 3
+vignette: |
+  %\VignetteIndexEntry{The toxTables function}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(eval = TRUE, message = FALSE, results = 'asis', comment='')
+options(width = 200)
+
+```
+
+# Introduction
+
+The `toxTables()` function produces structured statistical tables
+similar to those created for CTCAE data. Tables can show arm-level
+sample size and frequency distributions for PRO-CTCAE items available in
+the provided data frame. P-values from chi-squared or Fisher's exact
+tests can also be calculated. Additionally, risk-differences between
+arms can be calculated using provided alpha-level. An R data frame is
+returned in table format which can be further formatted through R
+packages, spreadsheets, or directly copy and pasted into a document.
+
+```{r}
+library(ProAE)
+require(knitr)
+require(tidyverse)
+```
+
+In the examples below, we will use the provided `ProAE::tox_acute` data
+frame. This data was simulated to demonstrate a common symptomatic AE
+profile where the drug group experiences acute toxicity followed by
+symptom abatement over the course of treatment.
+
+In order to use the `toxTables()` function the data frame needs to be in
+long format (multiple rows per patient). Additionally, the cycle
+variable needs to be numeric. This data frame already has composite
+scores calculated. If this wasn't the case then we could use the
+`toxScores()` function to calculate the scores first. Alternatively, if
+your data frame only included frequency/severity PRO-CTCAE items the
+output would only include Frequency/Severity.
+
+# Example 1 - Default Table
+
+```{r, results='markup'}
+
+acute <- ProAE::tox_acute
+
+colnames(acute)
+  
+```
+
+```{r}
+
+path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxTables.R"
+
+source(path)
+
+proctcae_vars=ProAE:::proctcae_vars
+
+```
+
+
+We can use the `toxTables()` function to create summary tables
+which calculates the frequency of patients with nausea scores >= 1 and >= 3 by treatment arm.
+
+The default summary measure used is the baseline adjusted score which is
+derived by the following:
+
+If the maximum score post-baseline is more severe than the baseline
+score, then the maximum score post-baseline is used as the adjusted
+score.
+
+Otherwise, if the maximum score post-baseline is the same or less serve
+than the baseline score, zero (0) is used as the adjusted score.
+
+```{r}
+
+table_1 <- toxTables(dsn = acute,
+                    id_var="id",
+                    cycle_var="Cycle",
+                    baseline_val = 1,
+                    arm="arm")
+
+```
+
+We can use the `knitr::kable()` function to see a simple RMarkdown version
+of the table.
+
+```{r}
+
+knitr::kable(table_1$individual)
+
+```

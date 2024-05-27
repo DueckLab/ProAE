@@ -1,0 +1,133 @@
+---
+title: "The toxFigures function"
+author: "Brie Noble, Blake Langlais"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 3
+vignette: |
+  %\VignetteIndexEntry{The toxFigures function}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(eval = TRUE, message = FALSE, results = 'asis', comment='')
+options(width = 200)
+
+```
+
+# Introduction
+
+The `toxFigures()` function creates publication quality longitudinal bar charts of symptomatic AE profiles. Frequency distributions of PRO-CTCAE scores can be shown over the course of the trial and can be stratified by treatment arm. An R list object is returned with the available PRO-CTCAE items indexed as elements of the list beside a reference table.
+
+```{r}
+library(ProAE)
+require(tidyverse)
+```
+
+In the following examples, we will use the provided `ProAE::tox_acute` data frame. This data was simulated to demonstrate a common symptomatic AE profile where the drug group experiences acute toxicity followed by symptom abatement over the course of treatment.
+
+In order to use the `toxFigures()` function the data frame needs to be in long format (multiple rows per patient). Additionally, the cycle variable needs to be numeric. This data frame already has composite scores calculated. If this wasn't the case then we could use the `toxScores()` function to calculate the scores first. Alternatively, if your data frame only included frequency/severity PRO-CTCAE items the output would only include Frequency/Severity bar charts.
+
+# Example 1 - Standard Longitudinal Bar Chart
+
+```{r,results='markup'}
+
+acute <- ProAE::tox_acute
+
+names(acute)
+  
+```
+
+```{r, echo=FALSE}
+
+path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxFigures.R"
+
+source(path)
+
+proctcae_vars=ProAE:::proctcae_vars
+
+```
+
+
+Next, we can use the `toxFigures()` function to create the standard longitudinal bar chart.
+
+The acute data frame only has one item - Nausea, so the returned list only has one item.
+
+```{r, results='markup'}
+
+figure_1 <- toxFigures(dsn = acute,
+                      cycle_var = "Cycle",
+                      baseline_val = 1,
+                      arm_var = "arm",
+                      id_var = "id")
+
+```
+
+To access the created bar chart for Nosebleeds we use the provided item_index
+
+```{r fig.width=9,fig.height=4}
+
+figure_1[[1]][2]
+
+```
+
+The figure is faceted by 1) Frequency, 2) Severity, 3) Composite and Cycle and
+
+Two summary measures -
+
+1) Maximum (the maximum score or grade reported post-baseline per patient)
+
+2) Adjusted (the maximum score or grade reported post-baseline per patient - only if higher than the post-baseline score)
+
+# Example 2 - Customizing bar charts
+
+Multiple customization parameters can be added to the `toxFigures()` call to customize the appearance of the output.
+
+Here are some examples:
+
+1)  easily add the item name as the title by setting the parameter `add_item_title` to `TRUE`
+2)  add annotations to the bars to show the number of patient with nausea scores of 3 or greater using the `bar_label` parameter
+3)  include only certain cycles or time points using the `cycle_vals` parameter
+4)  customize the cycle labeling by setting the `cycle_label` parameter to `TRUE` and using the `cycle_labs` to specify the labels
+5)  choose a colorblind-friendly color palette using the `colors` parameter
+6)  modify the x-axis title
+7)  include a box around the summary measures setting the `summary_highlight` parameter to `TRUE`
+8)  adjust the appearance of the x-axis labels angle using the `x_lab_angle` 
+and the `x_lab_hjust` parameter
+
+```{r, results='markup'}
+
+figure_2 <- toxFigures(dsn = acute,
+                      cycle_var = "Cycle",
+                      baseline_val = 1,
+                      arm_var = "arm",
+                      add_item_title=TRUE, #1
+                      bar_label = 3, #2
+                      cycle_vals=c(1,2,3,4,5,6), #3
+                      cycle_label=TRUE,
+                      cycle_labs=c("Baseline",
+                                   "Week 1",
+                                   "Week 2",
+                                   "Day 30",
+                                   "Month 2",
+                                   "Month 3"
+                                   ), #4
+                      colors = 2, #5
+                      id_var = "id",
+                      x_label = "Assigned Treatment Group",  #6
+                      summary_highlight = TRUE, #7
+                      x_lab_angle=45,
+                      x_lab_hjust=1) #8
+           
+
+```
+
+```{r,fig.width=9,fig.height=6}
+
+figure_2[[1]][2]
+
+```
+

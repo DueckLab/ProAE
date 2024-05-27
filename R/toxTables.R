@@ -190,7 +190,7 @@ toxTables = function(dsn,
     # ----------------------------------------------------------------
     if(is.na(arm_var)){
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -249,7 +249,7 @@ toxTables = function(dsn,
 
     } else {
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(all_of(id_var), all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -463,7 +463,7 @@ toxTables = function(dsn,
       # ----------------------------------------------------------------
 
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -523,7 +523,7 @@ toxTables = function(dsn,
     } else {
 
       dsn2 = dsn1 %>%
-        dplyr::select(id_var, arm_var, bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(all_of(id_var), all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
