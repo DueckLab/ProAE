@@ -34,6 +34,7 @@ NULL
 #'   \item arm. Treatment groups include drug and placebo
 #'   \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
 #'   \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
+#'   \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
 #' }
 #'
 #' @name tox_acute
@@ -53,7 +54,8 @@ NULL
 #'   \item arm. Treatment groups include drug and placebo
 #'   \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
 #'   \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
-#' }
+#'   \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
+#'  }
 #'
 #' @name tox_chronic
 #' @docType data
@@ -72,7 +74,8 @@ NULL
 #'   \item arm. Treatment groups include drug and placebo
 #'   \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
 #'   \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
-#' }
+#'   \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
+#'   }
 #'
 #' @name tox_cumulative
 #' @docType data
@@ -88,10 +91,12 @@ NULL
 #' \itemize{
 #'   \item id. Subject identifier
 #'   \item Cycle. Time variable denoting visits/cycles (1-10)
+
 #'   \item arm. Treatment groups include drug and placebo
 #'   \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
 #'   \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
-#' }
+#'   \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
+#'   }
 #'
 #' @name tox_cyclic
 #' @docType data
@@ -109,6 +114,7 @@ NULL
 #'   \item arm. Treatment groups include drug and placebo
 #'   \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
 #'   \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
+#'   \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
 #' }
 #'
 #' @name tox_late
