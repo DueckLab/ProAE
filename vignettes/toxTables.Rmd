@@ -32,11 +32,14 @@ arms can be calculated using provided alpha-level. An R data frame is
 returned in table format which can be further formatted through R
 packages, spreadsheets, or directly copy and pasted into a document.
 
-```{r}
+```{r, load-data}
 library(ProAE)
 require(knitr)
 require(tidyverse)
 require(kableExtra)
+
+data(tox_acute)
+
 ```
 
 In the examples below, we will use the provided `ProAE::tox_acute` data
@@ -52,22 +55,11 @@ variable needs to be numeric.
 
 ```{r, results='markup'}
 
-acute <- ProAE::tox_acute
+acute <- tox_acute
 
-colnames(acute)
+str(acute)
   
 ```
-
-```{r, echo=FALSE}
-
-path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxTables.R"
-
-source(path)
-
-proctcae_vars=ProAE:::proctcae_vars
-
-```
-
 
 The `toxTables()` function can be used to create a summary table
 that calculate the frequency of patients with nausea scores >= 1 and >= 3 by treatment arm.
@@ -112,7 +104,8 @@ to spreadsheet or copy and pasted into a document
 
 knitr::kable(table_1$individual,
              col.names = c('Item/Attribute', 'Drug', 'Placebo', 'Drug', 'Placebo', "p", "Drug", "Placebo", "p"),
-             caption = "Table 1. Frequency distributions of patients with nausea score >= 1 and >= 3, by treatment arm") %>%               add_header_above(c(" ", "n" = 2,  "Score >= 1" = 2, " ", "Score >= 3" = 2, " ")) %>% 
+             caption = "Table 1. Frequency distributions of patients with nausea score >= 1 and >= 3, by treatment arm") %>%               
+             add_header_above(c(" ", "n" = 2,  "Score >= 1" = 2, " ", "Score >= 3" = 2, " ")) %>% 
              add_footnote("p: result from a standard chi square test comparing score threshold frequency distributions between arms",notation = "symbol")
 
 ```

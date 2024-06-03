@@ -23,9 +23,11 @@ options(width = 200)
 
 The `toxFigures()` function creates publication quality longitudinal bar charts of symptomatic AE profiles. Frequency distributions of PRO-CTCAE scores can be shown over the course of the trial and can be stratified by treatment arm. An R list object is returned with the available PRO-CTCAE items indexed as elements of the list beside a reference table. Each figure item is a ggplot2 object. 
 
-```{r}
+```{r, load-data}
 library(ProAE)
 require(tidyverse)
+data(tox_acute)
+
 ```
 
 In the following examples, we will use the provided `ProAE::tox_acute` data frame. This data was simulated to demonstrate a common symptomatic AE profile where the drug group experiences acute toxicity followed by symptom abatement over the course of treatment.
@@ -36,22 +38,11 @@ In order to use the `toxFigures()` function the data frame needs to be in long f
 
 ```{r,results='markup'}
 
-acute <- ProAE::tox_acute
+acute <- tox_acute
 
-names(acute)
+str(acute)
   
 ```
-
-```{r, echo=FALSE}
-
-path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxFigures.R"
-
-source(path)
-
-proctcae_vars=ProAE:::proctcae_vars
-
-```
-
 
 Next, we can use the `toxFigures()` function to create the standard longitudinal bar chart.
 
