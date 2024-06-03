@@ -25,10 +25,11 @@ options(width = 200)
 
 The `toxAUC()` function gives the user a set of tools to assess incremental AUC (iAUC) adjusted for baseline symptoms. The accumulated area of the symptomatic AE profile above baseline can be interpreted as symptom worsening driven by treatment. Arm-level iAUCs can be compared statistically using the function parameters. 
 
-```{r}
+```{r,load-data}
 library(ProAE)
 require(knitr)
 require(tidyverse)
+data(tox_acute)
 
 ```
 
@@ -47,20 +48,10 @@ variable needs to be numeric.
 
 ```{r, results='markup'}
 
-acute <- ProAE::tox_acute
+acute <- tox_acute
 
-colnames(acute)
+str(acute)
   
-```
-
-```{r, echo=FALSE}
-
-path = "/projects/bsi/az/proctcae/s216317.moonshot/proae/Brie_ProAE/ProAE/R/toxAUC.R"
-
-source(path)
-
-proctcae_vars=ProAE:::proctcae_vars
-
 ```
 
 Below is the call for the `toxAUC()` function which will graph the the iAUC above baseline for two arms over the course of the trial. It will also perform a permutation test and provide a two-sided p value comparing the iAUC between the two arms.
