@@ -1298,8 +1298,6 @@ toxAUC = function(dsn,
 
     } else{
 
-      auc_tab_out[] <- lapply(auc_tab_out, function(x) as.numeric(as.character(x)))
-
       list_out[[i]] = list()
       list_out[[i]][[1]] = ref_labs[ref_labs[,"name"]==item, "short_label"]
       list_out[[i]][[2]] = figure_i
