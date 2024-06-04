@@ -13,8 +13,9 @@
 #' @param cycle_var A character string. Name of variable differentiating one
 #'   longitudinal/repeated. PRO-CTCAE survey from another, within an individual
 #'   ID.
-#' @param arm_var A character string. Name of arm variable differentiating
-#'   treatment arms or other grouping factor. Up to 4 arms can be supported.
+#' @param arm_var A character string. Name of arm character variable
+#'   differentiating treatment arms or other grouping factor. Up to 4 arms can
+#'   be supported.
 #' @param baseline_val A number indicating the expected baseline cycle/time
 #'   point.
 #' @param arm_var A character string. Name of arm variable differentiating
@@ -107,7 +108,7 @@ toxAUC = function(dsn,
                   cycle_label = FALSE,
                   cycle_vals = NA,
                   cycle_labs = NA){
-  
+
   # ----------------------------------------------------------------
   # --- Checks 1
   # ----------------------------------------------------------------
@@ -146,7 +147,7 @@ toxAUC = function(dsn,
     }
   }
   if(!(auc %in% c("above", "below", "both"))){
-    stop("param auc must be one of the fallowing; 'about' 'below' 'both")
+    stop("param auc must be one of the fallowing; 'above' 'below' 'both")
   }
   ## -- Check for conflicts with figure options
   if(cycle_label == TRUE){
@@ -416,7 +417,7 @@ toxAUC = function(dsn,
   # ------------------------------------------------------------------------------
   # --- Allow for bootstrap for alpha-level confidence intervals for difference in AUC between 2 arms (diff 2 arms)
   # ------------------------------------------------------------------------------
-    
+
   if(nrow(data.frame(table(dsn[,arm_var]))) == 2 & bootstrap_ci == TRUE){
 
     unique_ids_arm1 = unique(dsn[dsn[,arm_var] == unique(dsn[,arm_var])[1],id_var])
@@ -449,7 +450,7 @@ toxAUC = function(dsn,
         bladj_group_out_floor_inter_boot = cbind(group_out1, group_out2)
         bladj_group_out_ceiling_inter_boot = cbind(group_out1, group_out2)
      }
-    
+
       # --- WORSENING - Baseline adjusted (floor AUC is zero)
       for(i in unique(group_auc_boot[,arm_var])){
         bl_val = group_auc_boot[group_auc_boot[,arm_var]==i & !is.na(group_auc_boot[,item]) & group_auc_boot[,cycle_var]==baseline_val,item]
@@ -909,14 +910,13 @@ toxAUC = function(dsn,
         row.names(anno_tab_auc) = c("", "iAUC above", "iAUC below")
         figure_i = figure_i +
           ggplot2::annotation_custom(gridExtra::tableGrob(anno_tab_auc), xmin=0.38*cycle_limit, xmax=0.8125*cycle_limit, ymin=tab_ymin, ymax=tab_ymin) +
-
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm1, ],
                                ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.4, inherit.aes = FALSE) +
           ggplot2::geom_ribbon(data = ribbon_dat[ribbon_dat[,item] >= ribbon_dat$bl_val & ribbon_dat[,arm_var] == name_arm2, ],
-                               ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
+                               ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], fill=.data[[arm_var]]), alpha = 0.3, inherit.aes = FALSE) +
           ggpattern::geom_ribbon_pattern(
             data = ribbon_pattern_dat,
-            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = data[[arm_var]], pattern_color = data[[arm_var]]),
+            ggplot2::aes(x = .data[[cycle_var]], ymin = bl_val, ymax = .data[[item]], pattern_fill = .data[[arm_var]], pattern_color = .data[[arm_var]]),
             inherit.aes = FALSE,
             pattern_alpha = 0.4,
             fill            = NA,
@@ -926,6 +926,10 @@ toxAUC = function(dsn,
             show.legend = FALSE
           )
       }
+
+      auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
+      names(auc_tab_out) = t(anno_tab)[1,]
+      rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
 
     } else if(nrow(bl_dat)==3){
       bl_arm1 = bl_dat[1,item]
@@ -966,7 +970,7 @@ toxAUC = function(dsn,
 
 
       ribbon_pattern_dat = rbind.data.frame(ribbon_pattern_dat1[-1,], ribbon_pattern_dat2[-1,], ribbon_pattern_dat3[-1,])
-       
+
       item_title = ref_labs[ref_labs[,"name"]==item, "short_label"]
 
       df1 <- data.frame(x1 = baseline_val, x2 = cycle_limit, y1 = bl_arm1, y2 = bl_arm1, arm = name_arm1)
@@ -1092,6 +1096,7 @@ toxAUC = function(dsn,
       auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
       names(auc_tab_out) = t(anno_tab)[1,]
       rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
+
     } else if(nrow(bl_dat)==4){
       bl_arm1 = bl_dat[1,item]
       name_arm1 = bl_dat[1,arm_var]
@@ -1266,11 +1271,12 @@ toxAUC = function(dsn,
             show.legend = FALSE
           )
       }
-        
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
         rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
-      }
+
+
+    }
 
     # ------------------------------------------------------------------------------
     # --- Allow for permutation tests for the difference in AUC between 2 arms (iff 2 arms)
@@ -1281,15 +1287,29 @@ toxAUC = function(dsn,
       list_out[[i]] = list()
       list_out[[i]][[1]] = ref_labs[ref_labs[,"name"]==item, "short_label"]
       list_out[[i]][[2]] = figure_i
-      list_out[[i]][[3]] = AUC_table
-    } else{
+      # list_out[[i]][[3]] = AUC_table
+      if(auc == "above"){
+        list_out[[i]][[3]] = auc_tab_out[1,]
+      } else if(auc == "below"){
+        list_out[[i]][[3]] = auc_tab_out[2,]
+      } else if(auc == "both"){
+        list_out[[i]][[3]] = auc_tab_out
+      }
 
-      auc_tab_out[] <- lapply(auc_tab_out, function(x) as.numeric(as.character(x)))
+    } else{
 
       list_out[[i]] = list()
       list_out[[i]][[1]] = ref_labs[ref_labs[,"name"]==item, "short_label"]
       list_out[[i]][[2]] = figure_i
-      list_out[[i]][[3]] = auc_tab_out
+
+      if(auc == "above"){
+        list_out[[i]][[3]] = auc_tab_out[1,]
+      } else if(auc == "below"){
+        list_out[[i]][[3]] = auc_tab_out[2,]
+      } else if(auc == "both"){
+        list_out[[i]][[3]] = auc_tab_out
+      }
+
     }
 
   }
