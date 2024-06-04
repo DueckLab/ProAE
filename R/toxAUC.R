@@ -107,7 +107,7 @@ toxAUC = function(dsn,
                   cycle_label = FALSE,
                   cycle_vals = NA,
                   cycle_labs = NA){
-  
+
   # ----------------------------------------------------------------
   # --- Checks 1
   # ----------------------------------------------------------------
@@ -146,7 +146,7 @@ toxAUC = function(dsn,
     }
   }
   if(!(auc %in% c("above", "below", "both"))){
-    stop("param auc must be one of the fallowing; 'about' 'below' 'both")
+    stop("param auc must be one of the fallowing; 'above' 'below' 'both")
   }
   ## -- Check for conflicts with figure options
   if(cycle_label == TRUE){
@@ -416,7 +416,7 @@ toxAUC = function(dsn,
   # ------------------------------------------------------------------------------
   # --- Allow for bootstrap for alpha-level confidence intervals for difference in AUC between 2 arms (diff 2 arms)
   # ------------------------------------------------------------------------------
-    
+
   if(nrow(data.frame(table(dsn[,arm_var]))) == 2 & bootstrap_ci == TRUE){
 
     unique_ids_arm1 = unique(dsn[dsn[,arm_var] == unique(dsn[,arm_var])[1],id_var])
@@ -449,7 +449,7 @@ toxAUC = function(dsn,
         bladj_group_out_floor_inter_boot = cbind(group_out1, group_out2)
         bladj_group_out_ceiling_inter_boot = cbind(group_out1, group_out2)
      }
-    
+
       # --- WORSENING - Baseline adjusted (floor AUC is zero)
       for(i in unique(group_auc_boot[,arm_var])){
         bl_val = group_auc_boot[group_auc_boot[,arm_var]==i & !is.na(group_auc_boot[,item]) & group_auc_boot[,cycle_var]==baseline_val,item]
@@ -966,7 +966,7 @@ toxAUC = function(dsn,
 
 
       ribbon_pattern_dat = rbind.data.frame(ribbon_pattern_dat1[-1,], ribbon_pattern_dat2[-1,], ribbon_pattern_dat3[-1,])
-       
+
       item_title = ref_labs[ref_labs[,"name"]==item, "short_label"]
 
       df1 <- data.frame(x1 = baseline_val, x2 = cycle_limit, y1 = bl_arm1, y2 = bl_arm1, arm = name_arm1)
@@ -1266,10 +1266,11 @@ toxAUC = function(dsn,
             show.legend = FALSE
           )
       }
-        
         auc_tab_out = as.data.frame(t(anno_tab)[2:3,], stringsAsFactors = FALSE)
         names(auc_tab_out) = t(anno_tab)[1,]
         rownames(auc_tab_out) = rownames(t(anno_tab)[2:3,])
+
+
       }
 
     # ------------------------------------------------------------------------------
@@ -1289,7 +1290,15 @@ toxAUC = function(dsn,
       list_out[[i]] = list()
       list_out[[i]][[1]] = ref_labs[ref_labs[,"name"]==item, "short_label"]
       list_out[[i]][[2]] = figure_i
-      list_out[[i]][[3]] = auc_tab_out
+
+      if(auc == "above"){
+        list_out[[i]][[3]] = auc_tab_out[1,]
+      } else if(auc == "below"){
+        list_out[[i]][[3]] = auc_tab_out[2,]
+      } else if(auc == "both"){
+        list_out[[i]][[3]] = auc_tab_out
+      }
+
     }
 
   }
