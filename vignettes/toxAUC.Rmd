@@ -28,7 +28,7 @@ The `toxAUC()` function gives the user a set of tools to assess incremental AUC 
 ```{r,load-data}
 library(ProAE)
 require(knitr)
-require(tidyverse)
+
 data(tox_acute)
 
 ```
