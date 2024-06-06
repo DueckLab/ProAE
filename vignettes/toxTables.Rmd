@@ -35,7 +35,7 @@ packages, spreadsheets, or directly copy and pasted into a document.
 ```{r, load-data}
 library(ProAE)
 require(knitr)
-require(tidyverse)
+
 require(kableExtra)
 
 data(tox_acute)
