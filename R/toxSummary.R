@@ -23,7 +23,7 @@
 #'   baseline score, then the use maximum score post-baseline is used as the
 #'   adjusted score. Otherwise, if the maximum score post-baseline is the same
 #'   or less serve than the baseline score, then zero (0) is used as the
-#'   adjusted score. \code{"toxicity_idex"} = Construct patient-level toxicity
+#'   adjusted score. \code{"toxicity_index"} = Construct patient-level toxicity
 #'   index. \code{"AUC_worsening"} = Calculate group-level AUC describing
 #' @param baseline_val A number indicating the expected baseline cycle/time
 #'   point.
@@ -317,7 +317,7 @@ toxSummary <- function(dsn,
 
     #new code
     order_new = c(id_var,dsn_items)
-    data.table::setcolorder(out, order_new)
+    out <- out[,order_new]
     dsn_summary = out
 
     ## -- add back in any previous id's that were filtered out
@@ -426,4 +426,3 @@ toxSummary <- function(dsn,
   return(dsn_summary_complete)
 
 }
-
