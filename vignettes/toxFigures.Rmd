@@ -25,7 +25,7 @@ The `toxFigures()` function creates publication quality longitudinal bar charts 
 
 ```{r, load-data}
 library(ProAE)
-require(tidyverse)
+
 data(tox_acute)
 
 ```
