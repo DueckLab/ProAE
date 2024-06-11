@@ -24,7 +24,8 @@ Imports:
     magrittr,
     ggpattern,
     DescTools,
-    gridExtra
+    gridExtra,
+    kableExtra
 Suggests: 
     knitr,
     rmarkdown, 
