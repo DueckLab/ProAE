@@ -105,8 +105,9 @@ to spreadsheet or copy and pasted into a document
 knitr::kable(table_1$individual,
              col.names = c('Item/Attribute', 'Drug', 'Placebo', 'Drug', 'Placebo', "p", "Drug", "Placebo", "p"),
              caption = "Table 1. Frequency distributions of patients with nausea score >= 1 and >= 3, by treatment arm") %>%               
-             add_header_above(c(" ", "n" = 2,  "Score >= 1" = 2, " ", "Score >= 3" = 2, " ")) %>% 
-             add_footnote("p: result from a standard chi square test comparing score threshold frequency distributions between arms",notation = "symbol")
+             kableExtra::add_header_above(c(" ", "n" = 2,  "Score >= 1" = 2, " ", "Score >= 3" = 2, " ")) %>% 
+             kableExtra::add_footnote("p: result from a standard chi square test comparing score threshold frequency distributions between arms",
+                          notation = "symbol")
 
 ```
 

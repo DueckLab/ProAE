@@ -43,6 +43,7 @@
 #' @return A list object with data.frame elements for individual items and
 #'   composite scores.
 #' @importFrom magrittr %>%
+#' @importFrom kableExtra add_header_above add_footnote
 #' @examples
 #' toxTables(dsn=ProAE::tox_acute, id_var="id", cycle_var="Cycle", baseline_val=1)
 #' @export
