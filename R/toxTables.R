@@ -63,14 +63,6 @@ toxTables = function(dsn,
   # -- Checks 1/2
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for data.frame variables used within dplyr functions as global variables
-
-  base_val = NULL
-  max_val = NULL
-  bl_adjusted = NULL
-  max_post_bl = NULL
-  max = NULL
-
   ## -- Required parameters
 
   if(exists("dsn")){
