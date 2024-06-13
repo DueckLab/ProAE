@@ -52,9 +52,6 @@ toxSummary <- function(dsn,
   # --- Checks 1/2
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for objects
-  baseline = NULL
-
   ## -- Required parameters
   if(exists("dsn")){
     if(!is.data.frame(dsn)){

@@ -1287,7 +1287,7 @@ toxAUC = function(dsn,
       list_out[[i]] = list()
       list_out[[i]][[1]] = ref_labs[ref_labs[,"name"]==item, "short_label"]
       list_out[[i]][[2]] = figure_i
-      # list_out[[i]][[3]] = AUC_table
+
       if(auc == "above"){
         list_out[[i]][[3]] = auc_tab_out[1,]
       } else if(auc == "below"){

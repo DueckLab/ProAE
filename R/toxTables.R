@@ -63,14 +63,6 @@ toxTables = function(dsn,
   # -- Checks 1/2
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for data.frame variables used within dplyr functions as global variables
-
-  base_val = NULL
-  max_val = NULL
-  bl_adjusted = NULL
-  max_post_bl = NULL
-  max = NULL
-
   ## -- Required parameters
 
   if(exists("dsn")){
@@ -190,7 +182,7 @@ toxTables = function(dsn,
     # ----------------------------------------------------------------
     if(is.na(arm_var)){
       dsn2 = dsn1 %>%
-        dplyr::select(all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(dplyr::all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -249,7 +241,7 @@ toxTables = function(dsn,
 
     } else {
       dsn2 = dsn1 %>%
-        dplyr::select(all_of(id_var), all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(dplyr::all_of(id_var), dplyr::all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -463,7 +455,7 @@ toxTables = function(dsn,
       # ----------------------------------------------------------------
 
       dsn2 = dsn1 %>%
-        dplyr::select(all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(dplyr::all_of(id_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 
@@ -523,7 +515,7 @@ toxTables = function(dsn,
     } else {
 
       dsn2 = dsn1 %>%
-        dplyr::select(all_of(id_var), all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
+        dplyr::select(dplyr::all_of(id_var), dplyr::all_of(arm_var), bl_adjusted, max_post_bl, max_val) %>%
         dplyr::group_by(get(id_var)) %>%
         dplyr::slice(1)
 

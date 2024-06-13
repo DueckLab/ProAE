@@ -61,10 +61,6 @@ toxScores = function(dsn,
   # -- Checks 1/1
   # ----------------------------------------------------------------
 
-  ## -- Assign binding for data.frame variables used within subset function as global variables
-
-  fmt_name = NULL
-
   ## -- Required parameters
 
   if(exists("dsn")){
