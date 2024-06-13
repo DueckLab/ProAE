@@ -20,18 +20,18 @@
 #' @param plot_limit A number. Limit the number of cycles to be plotted up to
 #'   and including a given cycle number. All available cycle time points are
 #'   plotted if no cycle number is provided. Defaults to \code{NA}.
-#' @param colors A number. Specify the coloring scheme of symptom grades within
+#' @param colors A number. Specify the coloring scheme of symptom scores within
 #'   frequency bars. Options include: 1 = Blue and red color shading, 2 =
 #'   qualitative color shades (color blind friendly), 3 = black and white.
 #'   Defaults to 1.
 #' @param bar_label A number. Label frequency bars with sample size (n) or percent
 #'   shown on the y-axis. Label options include: \code{1} = sample size (n)
-#'   within each cycle (symptom grade 0 or higher), \code{2} = sample size (n)
-#'   within each cycle with present symptoms (symptom grade > 0), \code{3} =
-#'   sample size (n) within each cycle with severe symptoms (symptom grade >=
+#'   within each cycle (symptom score 0 or higher), \code{2} = sample size (n)
+#'   within each cycle with present symptoms (symptom score > 0), \code{3} =
+#'   sample size (n) within each cycle with severe symptoms (symptom score >=
 #'   3), \code{4} = percent of subjects within each cycle with present
-#'   symptoms (symptom grade > 0), \code{5} = percent of subjects within each
-#'   cycle with severe symptoms (symptom grade >= 3). No labels will be applied
+#'   symptoms (symptom score > 0), \code{5} = percent of subjects within each
+#'   cycle with severe symptoms (symptom score >= 3). No labels will be applied
 #'   if not specified. Defaults to \code{NA}.
 #' @param cycle_label Logical. Assign custom labels to cycles/time point. If
 #'   \code{TRUE}, the \code{cycle_vals} and \code{cycle_labs} must also be specified.
@@ -572,8 +572,8 @@ toxFigures = function(dsn,
         }
       }
 
-      foot1 = "\\*Maximum score or grade reported post-baseline per patient.<br>"
-      foot2a = "\\*\\*Maximum score or grade reported post-baseline per patient when"
+      foot1 = "\\*Maximum score reported post-baseline per patient.<br>"
+      foot2a = "\\*\\*Maximum score reported post-baseline per patient when"
       if(summary_only == TRUE || footnote_break == TRUE){
         foot2b = " including only scores<br> that were worse than the patient's baseline score."
       } else {
@@ -604,7 +604,7 @@ toxFigures = function(dsn,
         y_scale_lab = c("0","25","50","75","100", "n ")
       } else if (bar_label %in% c(2, 3, 4, 5)){
         label_foot = paste0("Column labels ", foot_symbol, " show the ", foot_type,
-                            " of subjects with symptom score or grade ",
+                            " of subjects with symptom score ",
                             foot_grade," or greater.<br>")
       }
 
