@@ -1,4 +1,4 @@
-# The `ProAE` Package <a href="https://duecklab.github.io/proae/"><img src="man/images/logo.png" alt="ProAE logo" style="float:right;height:232.25px" align="right" height="232.25"></a>
+# The `ProAE` Package <a href="https://duecklab.github.io/proae.html"><img src="man/images/logo.png" alt="ProAE logo" style="float:right;height:232.25px" align="right" height="232.25"></a>
 
 <!-- badges: start -->
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/ProAE)](https://CRAN.R-project.org/package=ProAE)
