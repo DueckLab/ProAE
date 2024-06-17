@@ -19,7 +19,7 @@ toxFigures(
   cycle_labs = NA,
   summary_only = FALSE,
   summary_highlight = FALSE,
-  cycles_only = FALSE,
+  cycles_only = TRUE,
   x_lab_angle = 0,
   x_lab_vjust = 1,
   x_lab_hjust = 0,
@@ -52,19 +52,19 @@ will be reported if no arm/grouping variable is provided. Defaults to
 and including a given cycle number. All available cycle time points are
 plotted if no cycle number is provided. Defaults to \code{NA}.}
 
-\item{colors}{A number. Specify the coloring scheme of symptom grades within
+\item{colors}{A number. Specify the coloring scheme of symptom scores within
 frequency bars. Options include: 1 = Blue and red color shading, 2 =
 qualitative color shades (color blind friendly), 3 = black and white.
 Defaults to 1.}
 
 \item{bar_label}{A number. Label frequency bars with sample size (n) or percent
 shown on the y-axis. Label options include: \code{1} = sample size (n)
-within each cycle (symptom grade 0 or higher), \code{2} = sample size (n)
-within each cycle with present symptoms (symptom grade > 0), \code{3} =
-sample size (n) within each cycle with severe symptoms (symptom grade >=
+within each cycle (symptom score 0 or higher), \code{2} = sample size (n)
+within each cycle with present symptoms (symptom score > 0), \code{3} =
+sample size (n) within each cycle with severe symptoms (symptom score >=
 3), \code{4} = percent of subjects within each cycle with present
-symptoms (symptom grade > 0), \code{5} = percent of subjects within each
-cycle with severe symptoms (symptom grade >= 3). No labels will be applied
+symptoms (symptom score > 0), \code{5} = percent of subjects within each
+cycle with severe symptoms (symptom score >= 3). No labels will be applied
 if not specified. Defaults to \code{NA}.}
 
 \item{cycle_label}{Logical. Assign custom labels to cycles/time point. If
@@ -87,7 +87,7 @@ chart. Defaults to \code{FALSE}.}
 
 \item{cycles_only}{Logical. Only display the longitudinal time points in
 figures / Suppress the summary measures from plotting. Defaults to
-\code{FALSE}.}
+\code{TRUE}.}
 
 \item{x_lab_angle}{A integer between 0 and 360. Allows the user to rotate the
 x axis labels in order to fit long arm names (0 or 45 recommended).

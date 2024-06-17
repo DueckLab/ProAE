@@ -1,7 +1,7 @@
 Package: ProAE
 Type: Package
 Title: PRO-CTCAE Scoring, Analysis, and Graphical Tools
-Version: 1.0.0
+Version: 1.0.1
 Author: Blake Langlais [aut, cre],
         Brie Noble [ctb],
         Mia Truman [ctb],
