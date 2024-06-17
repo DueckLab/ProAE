@@ -12,17 +12,23 @@ toxAUC(
   cycle_var,
   baseline_val,
   arm_var = NA,
+  auc = "above",
   cycle_limit = NA,
   y_limit = 4,
   tab_ymin = NA,
   tab_ymax = NA,
   round_dec = 2,
-  overwrite_title = NA,
   permute_tests = FALSE,
   permute_n = 2000,
   bootstrap_ci = FALSE,
   bootstrap_ci_alpha = 0.05,
-  bootstrap_n = 2000
+  bootstrap_n = 2000,
+  arm_colors = NA,
+  x_label = NA,
+  add_item_title = FALSE,
+  cycle_label = FALSE,
+  cycle_vals = NA,
+  cycle_labs = NA
 )
 }
 \arguments{
@@ -43,6 +49,14 @@ treatment groups. Must be character or factor class. Overall frequencies
 will be reported if no arm/grouping variable is provided. Defaults to
 \code{NA}.}
 
+\item{auc}{A character string. Specifies the partitioning of area shown.
+options include: \code{"above"} = accumulated area above the baseline
+horizontal can be interpreted as worsening severity from baseline.
+\code{"below"} = accumulated area below the baseline horizontal can be
+interpreted the as the amount of decreased severity from baseline.
+\code{"both"} = accumulated area above and below the baseline horizontal
+are shown. Defaults to \code{"above"}.}
+
 \item{cycle_limit}{A number. Limit the number of cycles to be use to
 calculate the AUC metrics up to and including a given cycle number.
 All available cycle time points are used if no cycle number is provided.
@@ -58,9 +72,6 @@ placement of the AUC table within the figure. Defaults to \code{NA}.}
 
 \item{round_dec}{A number. Number of decimal places to be shown within
 the AUC table. Defaults to \code{2}.}
-
-\item{overwrite_title}{A character string. Add main title to plots. Defaults
-to \code{NA}.}
 
 \item{permute_tests}{Logical. Calls to calculate p values comparing the
 difference in AUC between two arms using a permutation test. Typical two-
@@ -83,6 +94,29 @@ confidence intervals. Must be between 0 and 1. Defaults to \code{0.05}.}
 
 \item{bootstrap_n}{A number. The number of bootstrap iterations to be used
 for bootstrap confidence intervals. Defaults to \code{2000}.}
+
+\item{arm_colors}{A column vector of valid colors. Allows the user to define
+the colors of arms shown in the returned figure. Column vector must have
+length greater than or equal to the number of arms. Default colors
+provided.}
+
+\item{x_label}{A character string. Label for the x axis of the plot. Defaults
+to \code{NA} resulting in x axis labeled with \code{cycle_var} variable
+name.}
+
+\item{add_item_title}{Logical. Adds the item short label to the title of
+each figure. Defaults to \code{FALSE}.}
+
+\item{cycle_label}{Logical. Assign custom labels to cycles/time point. If
+\code{TRUE}, the \code{cycle_vals} and \code{cycle_labs} must also be specified.}
+
+\item{cycle_vals}{Numeric column vector. Vector of values seen within the
+\code{cycle_var} variable. Must be same length of \code{cycle_labs}. Defaults
+to \code{NA}.}
+
+\item{cycle_labs}{Character column vector. Vector of labels to be mapped to
+the associated \code{cycle_vals}. Must be same length of \code{cycle_vals}.
+Defaults to \code{NA}.}
 }
 \description{
 Data format should be in 'long' format, where each PRO-CTCAE item is a

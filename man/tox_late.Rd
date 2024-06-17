@@ -15,8 +15,9 @@ Simulated example data where the drug group experiences late incipient toxicity 
   \item id. Subject identifier
   \item Cycle. Time variable denoting visits/cycles (1-10)
   \item arm. Treatment groups include drug and placebo
-  \item PROCTCAE_78A_SC. PRO-CTCAE frequency item for nosebleeds
-  \item PROCTCAE_78B_SC. PRO-CTCAE severity item for nosebleeds
+  \item PROCTCAE_9A_SCL. PRO-CTCAE frequency item for nausea
+  \item PROCTCAE_9B_SCL. PRO-CTCAE severity item for nausea
+  \item PROCTCAE_9_COMP. PRO-CTCAE composite score for nausea
 }
 }
 \author{

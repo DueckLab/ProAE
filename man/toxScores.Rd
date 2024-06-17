@@ -3,7 +3,7 @@
 \name{toxScores}
 \alias{toxScores}
 \title{Re-code PRO-CTCAE text responses, apply a zero-imputation procedures, and
-construct PRO-CTCAE composite grades.}
+construct PRO-CTCAE composite scores.}
 \usage{
 toxScores(
   dsn,
@@ -21,7 +21,7 @@ to \code{FALSE}.}
 
 \item{impute}{Apply zero-imputation where appropriate. Defaults to \code{FALSE}.}
 
-\item{composites}{Construct composite grade using available PRO-CTCAE
+\item{composites}{Construct composite score using available PRO-CTCAE
 variables within \code{dsn}. Defaults to \code{FALSE}.}
 
 \item{short_labels}{Add PRO-CTCAE short labels to available PRO-CTCAE
@@ -49,7 +49,7 @@ This function takes in a data frame set with PRO-CTCAE survey text
      \item[EX3]Question 73 of PRO-CTCAE should be: PROCTCAE_73A_IND
    }
 
-   This function also constructs PRO-CTCAE composite grades. Composite grade
+   This function also constructs PRO-CTCAE composite scores. Composite score
    variables for respective PRO-CTCAE item groups are created and named as
    PROCTCAE_##_COMP.
 

@@ -68,7 +68,7 @@ including a given cycle number or time point. Defaults to \code{NA}.}
 }
 \value{
 A list object with data.frame elements for individual items and
-  composite grades.
+  composite scores.
 }
 \description{
 Data format should be in 'long' format, where each PRO-CTCAE item is a
