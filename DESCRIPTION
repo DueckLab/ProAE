@@ -1,14 +1,14 @@
 Package: ProAE
 Type: Package
 Title: PRO-CTCAE Scoring, Analysis, and Graphical Tools
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: c(person(given = "Blake",
                     family = "Langlais",
-                    role = c("aut", "cre"),
-                    email = "langlais.blake@mayo.edu"),
+                    role = "aut"),
                person(given = "Brie",
                       family = "Noble",
-                      role = "ctb"),
+                      role = c("ctb","cre"),
+                      email = "noble.brie@mayo.edu"),
                person(given = "Mia",
                       family = "Truman",
                       role = "ctb"),
