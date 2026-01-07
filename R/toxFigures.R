@@ -118,6 +118,11 @@ toxFigures = function(dsn,
   # -- Checks 1/2
   # ----------------------------------------------------------------
 
+  ## -- Temporary: Check to ensure change agreement between ggplot2 and ggnewscale
+  if(utils::packageVersion("ggplot2") >= "3.5.0" && utils::packageVersion("ggnewscale") < "0.5.0") {
+    stop("ggnewscale version >= 0.5.0 required")
+  }
+
   ## -- Required parameters
 
   if(exists("dsn")){
@@ -593,7 +598,7 @@ toxFigures = function(dsn,
       }
 
       if(bar_label==1){
-        label_foot = "Column labels (n) show the number of subjects with an observed symptom score or grade.<br>"
+        label_foot = "Column labels (n) show the number of subjects with an observed symptom score.<br>"
         y_scale_lab = c("0","25","50","75","100", "n ")
       } else if (bar_label %in% c(2, 3, 4, 5)){
         label_foot = paste0("Column labels ", foot_symbol, " show the ", foot_type,
