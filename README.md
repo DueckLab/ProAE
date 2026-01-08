@@ -14,13 +14,9 @@ To use the functions, data needs to be long (multiple observations per patient (
 
 `ProAE::PROCTCAE_table` provides a crosswalk/look-up table of expected variable names for associated PRO-CTCAE symptom items. 
 
-PRO-CTCAE Reference: https://healthcaredelivery.cancer.gov/pro-ctcae/instrument-pro.html
-
 ## The `toxScores()` Function
 
 `toxScores()` is a function that easiliy reformats PRO-CTCAE items that were collected as text responses to numeric, applies zero-imputation procedures, and constructs PRO-CTCAE composite grades. This function accepts 1 or up to all 124 PRO-CTCAE items. This function returns a data frame with the respective numerical re-coding and computations. This function should be used prior to other functions in this package.
-
-Composite grading reference: https://pubmed.ncbi.nlm.nih.gov/33258687/
 
 ## The `toxFigures` Function
 
@@ -52,7 +48,6 @@ Composite grading reference: https://pubmed.ncbi.nlm.nih.gov/33258687/
 
 `toxAUC()` is function that summarizes patient's symptomatic experience by calculating incremental AUC adjusted for baseline symptoms. Arm-level AUCs can be compared statistically using function parameters. See the toxAUC() vignette for more details about how to use this function.
 
-
 ## Other objects
 
 `ProAE` also includes simulated data of common symptomatic AE profiles such as acute, cumulative, cyclical, and late toxicity at various effect sizes for power or exploratory analysis.
@@ -64,4 +59,18 @@ Composite grading reference: https://pubmed.ncbi.nlm.nih.gov/33258687/
 * `tox_cummulative` is a simulated data frame where drug toxicity is cumulative over the course of treatment.
 
 * `tox_late` is a simulated data frame where the drug group experiences late incipient toxicity towards the end of the treatment period.
+
+## Resources
+
+Basch E, Becker C, Rogak LJ, et al. Composite grading algorithm for the National Cancer Institute’s Patient-Reported Outcomes version of the Common Terminology Criteria for Adverse Events (PRO-CTCAE). 
+Clin Trials. 2021;18(1):104-114. doi:10.1177/1740774520975120.</a> <a href="https://pubmed.ncbi.nlm.nih.gov/33258687/" target="_blank">PMID: 33258687</a>
+
+Dueck Lab. <a href="https://duecklab.github.io/" target="_blank">https://duecklab.github.io/</a>
+
+Langlais B, Noble B, Fruth B, Truman M, Mazza GL, Ginos B, Mead-Harvey C, Lee M, Yee C, Rogak L, Meek E, Deal AM, Peipert JD, Thanarajasingam G, Basch E, Dueck AC. ProAE: an R package for graphical tools and standardized analysis of 
+patient-reported outcomes and adverse events data. BMC Med Inform Decis Mak. Published online December 20, 2025. doi:10.1186/s12911-025-03320-0. 
+<a href="https://pubmed.ncbi.nlm.nih.gov/41422214/" target="_blank">PMID: 41422214</a>
+
+National Cancer Institute. Patient-Reported Outcomes version of the Common Terminology Criteria for Adverse Events (PRO-CTCAE). Healthcare Delivery Research Program. 
+ <a href="https://healthcaredelivery.cancer.gov/pro-ctcae/" target="_blank">https://healthcaredelivery.cancer.gov/pro-ctcae/</a>
 
